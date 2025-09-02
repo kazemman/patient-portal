@@ -81,12 +81,21 @@ export const PatientCheckin = () => {
 
     try {
       const response = await fetch(`/api/patients/search?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
-
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Search failed');
+        // Handle non-OK responses before trying to parse JSON
+        let errorMessage = 'Search failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, use status text
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
+      const data = await response.json();
       setSearchResults(data.patients || []);
     } catch (error) {
       console.error('Search error:', error);
