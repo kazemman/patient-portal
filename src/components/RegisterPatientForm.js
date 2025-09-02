@@ -43,6 +43,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
     sa_id_number: '',
     passport_number: '',
     passport_country: '',
+    date_of_birth: '',
     medical_aid: '',
     medical_aid_number: '',
     telegram_user_id: '',
@@ -290,6 +291,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
       sa_id_number: '',
       passport_number: '',
       passport_country: '',
+      date_of_birth: '',
       medical_aid: '',
       medical_aid_number: '',
       telegram_user_id: '',
@@ -662,6 +664,22 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
                     </div>
                   </div>
                 )}
+
+                {/* Date of Birth */}
+                <div>
+                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                    className={errors.date_of_birth ? 'border-destructive' : ''}
+                    aria-describedby={errors.date_of_birth ? 'date_of_birth-error' : undefined}
+                  />
+                  {errors.date_of_birth && (
+                    <p id="date_of_birth-error" className="text-sm text-destructive mt-1">{errors.date_of_birth}</p>
+                  )}
+                </div>
 
                 {/* File Upload */}
                 <div>
