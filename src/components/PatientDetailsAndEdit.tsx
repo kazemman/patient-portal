@@ -93,7 +93,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
       setError(null);
       
       const token = localStorage.getItem("bearer_token");
-      const response = await fetch(`/webhook/clinic-portal/patient/${patientId}`, {
+      const response = await fetch(`/api/webhook/clinic-portal/patient/${patientId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -101,7 +101,10 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch patient data');
+        if (response.status === 404) {
+          throw new Error('Patient not found');
+        }
+        throw new Error(`Failed to fetch patient data: ${response.status}`);
       }
 
       const data = await response.json();
@@ -120,7 +123,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
       setIsAuditLoading(true);
       
       const token = localStorage.getItem("bearer_token");
-      const response = await fetch(`/webhook/clinic-portal/patient/${patientId}/audit`, {
+      const response = await fetch(`/api/webhook/clinic-portal/patient/audit?patientId=${patientId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -128,11 +131,11 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch audit logs');
+        throw new Error(`Failed to fetch audit logs: ${response.status}`);
       }
 
       const data = await response.json();
-      setAuditLogs(data);
+      setAuditLogs(data.auditHistory || []);
     } catch (error) {
       console.error('Error fetching audit logs:', error);
       toast.error('Failed to load audit history');
@@ -178,14 +181,14 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
       }, {} as Record<string, { from: any; to: any }>);
 
       const token = localStorage.getItem("bearer_token");
-      const response = await fetch('/webhook/clinic-portal/patient/update', {
+      const response = await fetch('/api/webhook/clinic-portal/patient/update', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: patient.id,
+          patientId: parseInt(patient.id),
           ...editForm,
           changes,
           reason: changeReason,
@@ -193,7 +196,8 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update patient');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to update patient: ${response.status}`);
       }
 
       const updatedPatient = await response.json();
