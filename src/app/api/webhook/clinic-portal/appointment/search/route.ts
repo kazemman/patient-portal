@@ -127,21 +127,30 @@ export async function POST(request: NextRequest) {
     // Only include active patients
     conditions.push(eq(patients.active, true));
 
-    // Build base query with join
+    // Build base query with join - select all required patient fields
     let query = db
       .select({
+        // Appointment fields
         id: appointments.id,
         patientId: appointments.patientId,
-        firstName: patients.firstName,
-        lastName: patients.lastName,
-        phone: patients.phone,
         appointmentDate: appointments.appointmentDate,
         durationMinutes: appointments.durationMinutes,
         reason: appointments.reason,
         notes: appointments.notes,
         status: appointments.status,
         createdAt: appointments.createdAt,
-        updatedAt: appointments.updatedAt
+        updatedAt: appointments.updatedAt,
+        // Complete patient fields
+        patientFirstName: patients.firstName,
+        patientLastName: patients.lastName,
+        patientPhone: patients.phone,
+        patientEmail: patients.email,
+        patientIdType: patients.idType,
+        patientSaIdNumber: patients.saIdNumber,
+        patientPassportNumber: patients.passportNumber,
+        patientPassportCountry: patients.passportCountry,
+        patientMedicalAid: patients.medicalAid,
+        patientMedicalAidNumber: patients.medicalAidNumber
       })
       .from(appointments)
       .innerJoin(patients, eq(appointments.patientId, patients.id));
@@ -172,20 +181,30 @@ export async function POST(request: NextRequest) {
 
     const total = countResult[0]?.count || 0;
 
-    // Format response according to specification
+    // Format response with nested patient object and renamed fields
     const formattedAppointments = results.map(row => ({
       id: row.id,
-      patient_id: row.patientId,
-      patient_name: `${row.firstName} ${row.lastName}`,
-      patient_phone: row.phone,
-      patient_avatar: null, // placeholder for future avatar functionality
-      appointment_date: row.appointmentDate,
-      duration_minutes: row.durationMinutes,
+      patientId: row.patientId,
+      patient: {
+        id: row.patientId,
+        firstName: row.patientFirstName,
+        lastName: row.patientLastName,
+        phone: row.patientPhone,
+        email: row.patientEmail,
+        idType: row.patientIdType,
+        saIdNumber: row.patientSaIdNumber,
+        passportNumber: row.patientPassportNumber,
+        passportCountry: row.patientPassportCountry,
+        medicalAid: row.patientMedicalAid,
+        medicalAidNumber: row.patientMedicalAidNumber
+      },
+      appointmentDatetime: row.appointmentDate,
+      durationMinutes: row.durationMinutes,
       reason: row.reason,
       notes: row.notes,
       status: row.status,
-      created_at: row.createdAt,
-      updated_at: row.updatedAt
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
     }));
 
     return NextResponse.json({
