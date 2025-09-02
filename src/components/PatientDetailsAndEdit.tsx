@@ -47,10 +47,10 @@ interface Patient {
   province: string;
   postalCode: string;
   idType: string;
-  saIdNumber?: string;
+  saIdNumber: string; // Correct API field name
   passportNumber?: string;
   passportCountry?: string;
-  medicalAid?: string;
+  medicalAid?: string; // Correct API field name
   medicalAidNumber?: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
@@ -187,7 +187,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
         return acc;
       }, {} as Record<string, { from: any; to: any }>);
 
-      // Create the update payload with all fields including medical aid and ID fields
+      // Create the update payload with correct API field names
       const updateData = {
         patientId: parseInt(patient.id),
         firstName: editForm.firstName || patient.firstName,
@@ -203,10 +203,10 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
         emergencyContactName: editForm.emergencyContactName || patient.emergencyContactName || null,
         emergencyContactPhone: editForm.emergencyContactPhone || patient.emergencyContactPhone || null,
         emergencyContactRelationship: editForm.emergencyContactRelationship || patient.emergencyContactRelationship || null,
-        // Medical Aid fields
+        // Medical Aid fields (correct API field names)
         medicalAid: editForm.medicalAid || patient.medicalAid || null,
         medicalAidNumber: editForm.medicalAidNumber || patient.medicalAidNumber || null,
-        // ID fields
+        // ID fields (correct API field names)
         idType: editForm.idType || patient.idType,
         saIdNumber: editForm.saIdNumber || patient.saIdNumber || null,
         passportNumber: editForm.passportNumber || patient.passportNumber || null,
