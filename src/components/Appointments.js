@@ -61,7 +61,7 @@ export default function Appointments({ className }) {
   const fetchAppointments = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/webhook/clinic-portal/appointment/search', {
+      const response = await fetch('/api/webhook/clinic-portal/appointment/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -86,11 +86,7 @@ export default function Appointments({ className }) {
 
   const fetchPatients = useCallback(async () => {
     try {
-      const response = await fetch('/webhook/clinic-portal/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: '', type: 'patient' })
-      });
+      const response = await fetch('/api/patients/search?q=');
       
       if (response.ok) {
         const data = await response.json();
@@ -118,18 +114,29 @@ export default function Appointments({ className }) {
 
     try {
       setPatientSearchLoading(true);
-      const response = await fetch('/webhook/clinic-portal/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: term, type: 'patient' })
-      });
+      const response = await fetch(`/api/patients/search?q=${encodeURIComponent(term)}`);
       
-      if (response.ok) {
-        const data = await response.json();
-        setPatientSearchResults(data.patients || []);
+      if (!response.ok) {
+        let errorMessage = 'Search failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+      
+      const data = await response.json();
+      // Transform the API response to match component expectations
+      const transformedPatients = (data.patients || []).map(patient => ({
+        ...patient,
+        name: `${patient.firstName} ${patient.lastName}`.trim()
+      }));
+      setPatientSearchResults(transformedPatients);
     } catch (error) {
       console.error('Patient search error:', error);
+      setPatientSearchResults([]);
     } finally {
       setPatientSearchLoading(false);
     }
@@ -177,7 +184,7 @@ export default function Appointments({ className }) {
     
     try {
       setSubmitting(true);
-      const response = await fetch('/webhook/clinic-portal/appointment/create', {
+      const response = await fetch('/api/webhook/clinic-portal/appointment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -211,7 +218,7 @@ export default function Appointments({ className }) {
   // Update appointment status
   const updateAppointmentStatus = useCallback(async (appointmentId, status, reason = '') => {
     try {
-      const response = await fetch('/webhook/clinic-portal/appointment/update', {
+      const response = await fetch('/api/webhook/clinic-portal/appointment/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
