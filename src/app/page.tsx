@@ -9,6 +9,9 @@ import { QueueDashboard } from '@/components/QueueDashboard';
 import { CheckInStats } from '@/components/CheckInStats';
 import { UserManagement } from '@/components/UserManagement';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import RegisterPatientForm from '@/components/RegisterPatientForm';
+import SearchPatients from '@/components/SearchPatients';
+import Appointments from '@/components/Appointments';
 
 function MainContent() {
   const [currentSection, setCurrentSection] = useState('dashboard');
@@ -130,42 +133,23 @@ function MainContent() {
       
       case 'register':
         return (
-          <div className="text-center space-y-6 p-8">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <span className="text-2xl">👤</span>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Register Patient</h2>
-              <p className="text-gray-600">Patient registration form will be available here.</p>
-            </div>
-          </div>
+          <RegisterPatientForm
+            onNavigateToDetails={handleNavigateToPatient}
+            onRegisterAnother={handleRegisterAnother}
+          />
         );
       
       case 'search':
         return (
-          <div className="text-center space-y-6 p-8">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
-              <span className="text-2xl">🔍</span>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Search Patients</h2>
-              <p className="text-gray-600">Patient search functionality will be available here.</p>
-            </div>
-          </div>
+          <SearchPatients
+            onNavigateToPatientDetails={handleNavigateToPatient}
+            onNavigateToRegisterPatient={handleNavigateToRegister}
+            onPrintPatient={handlePrintPatient}
+          />
         );
       
       case 'appointments':
-        return (
-          <div className="text-center space-y-6 p-8">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-              <span className="text-2xl">📅</span>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Appointments</h2>
-              <p className="text-gray-600">Appointment management will be available here.</p>
-            </div>
-          </div>
-        );
+        return <Appointments />;
       
       case 'audit':
         return <AuditLogs />;
