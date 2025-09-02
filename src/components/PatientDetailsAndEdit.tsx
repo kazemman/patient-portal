@@ -791,13 +791,13 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
                   {isEditing ? (
                     <Select
                       value={editForm.emergencyContactRelationship || ''}
-                      onValueChange={(value) => handleInputChange('emergencyContactRelationship', value)}
+                      onValueChange={(value) => handleInputChange('emergencyContactRelationship', value === 'not_specified' ? '' : value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select relationship (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Not specified</SelectItem>
+                        <SelectItem value="not_specified">Not specified</SelectItem>
                         <SelectItem value="spouse">Spouse</SelectItem>
                         <SelectItem value="parent">Parent</SelectItem>
                         <SelectItem value="child">Child</SelectItem>
