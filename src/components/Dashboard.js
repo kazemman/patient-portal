@@ -24,18 +24,68 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnalyticsDashboard } from '@/components/Analytics';
 
+// Sample data for immediate display
+const SAMPLE_STATS = {
+  appointmentsToday: 12,
+  appointmentsTodayChange: 8,
+  totalPatients: 2,
+  totalPatientsChange: 25,
+  todayPatients: 8,
+  todayPatientsChange: -5,
+  newRegistrations: 3,
+  newRegistrationsChange: 50,
+  upcomingAppointments: 18,
+  recentActivity: [
+    {
+      id: 1,
+      patientName: "John Smith",
+      appointmentDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      status: "scheduled",
+      reason: "General Checkup"
+    },
+    {
+      id: 2,
+      patientName: "Sarah Johnson",
+      appointmentDate: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+      status: "completed",
+      reason: "Follow-up Consultation"
+    },
+    {
+      id: 3,
+      patientName: "Michael Brown",
+      appointmentDate: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+      status: "scheduled",
+      reason: "Blood Pressure Check"
+    },
+    {
+      id: 4,
+      patientName: "Emma Davis",
+      appointmentDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      status: "completed",
+      reason: "Diabetes Management"
+    },
+    {
+      id: 5,
+      patientName: "David Wilson",
+      appointmentDate: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+      status: "scheduled",
+      reason: "Vaccination"
+    }
+  ]
+};
+
 export default function Dashboard({ onNavigateToPatient }) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(SAMPLE_STATS);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
-  const [lastRefresh, setLastRefresh] = useState(null);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
   const fetchStats = useCallback(async () => {
     try {
       setError(null);
-      const response = await fetch('/api/src/app/webhook/clinic-portal/stats');
+      const response = await fetch('/api/webhook/clinic-portal/stats');
       
       if (!response.ok) {
         throw new Error(`Failed to fetch stats: ${response.statusText}`);
@@ -47,7 +97,9 @@ export default function Dashboard({ onNavigateToPatient }) {
     } catch (err) {
       console.error('Error fetching stats:', err);
       setError(err.message);
-      toast.error('Failed to load dashboard data. Please try again.');
+      // Keep using sample data on error
+      setStats(SAMPLE_STATS);
+      toast.error('Using sample data - API not available');
     } finally {
       setLoading(false);
     }
@@ -69,6 +121,12 @@ export default function Dashboard({ onNavigateToPatient }) {
   }, [onNavigateToPatient]);
 
   useEffect(() => {
+    // Start with sample data immediately
+    setStats(SAMPLE_STATS);
+    setLastRefresh(new Date());
+    setLoading(false);
+    
+    // Try to fetch real data
     fetchStats();
   }, [fetchStats]);
 

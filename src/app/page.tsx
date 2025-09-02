@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { AppLayout } from '@/components/AppLayout';
+import Dashboard from '@/components/Dashboard';
 import PatientDetailsAndEdit from '@/components/PatientDetailsAndEdit';
 import AuditLogs from '@/components/AuditLogs';
 import { PatientCheckin } from '@/components/PatientCheckIn';
@@ -117,19 +118,7 @@ function MainContent() {
 
     switch (currentSection) {
       case 'dashboard':
-        return (
-          <div className="text-center space-y-6 p-8">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-              <span className="text-2xl">📊</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to InvoTech Health Care</h2>
-              <p className="text-gray-600">
-                Your clinic management dashboard. Use the navigation menu to access different sections.
-              </p>
-            </div>
-          </div>
-        );
+        return <Dashboard onNavigateToPatient={handleNavigateToPatient} />;
       
       case 'register':
         return (
@@ -179,19 +168,7 @@ function MainContent() {
         );
       
       default:
-        return (
-          <div className="text-center space-y-6 p-8">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-              <span className="text-2xl">📊</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to InvoTech Health Care</h2>
-              <p className="text-gray-600">
-                Your clinic management dashboard. Use the navigation menu to access different sections.
-              </p>
-            </div>
-          </div>
-        );
+        return <Dashboard onNavigateToPatient={handleNavigateToPatient} />;
     }
   };
 
