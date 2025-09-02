@@ -15,7 +15,8 @@ import {
   Users,
   UserX,
   CheckCircle,
-  BarChart3
+  BarChart3,
+  ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,34 +32,57 @@ export default function Dashboard({ onNavigateToPatient }) {
   const [error, setError] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [queueData, setQueueData] = useState([]);
+  const [queueLoading, setQueueLoading] = useState(true);
+
+  const fetchQueue = useCallback(async () => {
+    try {
+      setQueueLoading(true);
+      const response = await fetch('/api/webhook/clinic-portal/queue?limit=10');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setQueueData(data);
+      } else {
+        console.error('Failed to fetch queue data');
+        setQueueData([]);
+      }
+    } catch (error) {
+      console.error('Error fetching queue:', error);
+      setQueueData([]);
+    } finally {
+      setQueueLoading(false);
+    }
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
       setError(null);
       const response = await fetch('/api/webhook/clinic-portal/dashboard-stats/detailed');
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.statusText}`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Transform the data to match component expectations
+        const transformedStats = {
+          appointmentsToday: data.todayAppointments || 0,
+          appointmentsTodayChange: data.trends?.appointmentGrowth ? parseFloat(data.trends.appointmentGrowth.replace(/[+%]/g, '')) : 0,
+          totalPatients: data.totalPatients || 0,
+          totalPatientsChange: data.trends?.patientGrowth ? parseFloat(data.trends.patientGrowth.replace(/[+%]/g, '')) : 0,
+          todayPatients: data.completedToday || 0,
+          todayPatientsChange: 0, // Could add this to API later
+          newRegistrations: 0, // Could add this to API later
+          newRegistrationsChange: 0,
+          upcomingAppointments: data.upcomingAppointments || 0,
+          recentActivity: data.recentActivity || []
+        };
+        
+        setStats(transformedStats);
+        setLastRefresh(new Date());
+      } else {
+        console.error('Failed to fetch clinic stats');
+        // Keep using fallback data
       }
-      
-      const data = await response.json();
-      
-      // Transform the data to match component expectations
-      const transformedStats = {
-        appointmentsToday: data.todayAppointments || 0,
-        appointmentsTodayChange: data.trends?.appointmentGrowth ? parseFloat(data.trends.appointmentGrowth.replace(/[+%]/g, '')) : 0,
-        totalPatients: data.totalPatients || 0,
-        totalPatientsChange: data.trends?.patientGrowth ? parseFloat(data.trends.patientGrowth.replace(/[+%]/g, '')) : 0,
-        todayPatients: data.completedToday || 0,
-        todayPatientsChange: 0, // Could add this to API later
-        newRegistrations: 0, // Could add this to API later
-        newRegistrationsChange: 0,
-        upcomingAppointments: data.upcomingAppointments || 0,
-        recentActivity: data.recentActivity || []
-      };
-      
-      setStats(transformedStats);
-      setLastRefresh(new Date());
     } catch (err) {
       console.error('Error fetching stats:', err);
       setError(err.message);
@@ -71,7 +95,8 @@ export default function Dashboard({ onNavigateToPatient }) {
   const handleRefresh = useCallback(() => {
     setLoading(true);
     fetchStats();
-  }, [fetchStats]);
+    fetchQueue();
+  }, [fetchStats, fetchQueue]);
 
   const handlePrintSnapshot = useCallback(() => {
     window.print();
@@ -85,15 +110,19 @@ export default function Dashboard({ onNavigateToPatient }) {
 
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchQueue();
+  }, [fetchStats, fetchQueue]);
 
   // Auto-refresh interval
   useEffect(() => {
     if (refreshInterval > 0) {
-      const interval = setInterval(fetchStats, refreshInterval);
+      const interval = setInterval(() => {
+        fetchStats();
+        fetchQueue();
+      }, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [fetchStats, refreshInterval]);
+  }, [fetchStats, fetchQueue, refreshInterval]);
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -109,6 +138,21 @@ export default function Dashboard({ onNavigateToPatient }) {
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const formatWaitingTime = (minutes) => {
+    if (!minutes || minutes < 60) {
+      return `${minutes || 0}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  const getWaitingTimeColor = (minutes) => {
+    if (!minutes || minutes < 30) return 'text-green-600';
+    if (minutes <= 60) return 'text-yellow-600';
+    return 'text-red-600';
   };
 
   const StatCard = ({ icon: Icon, title, value, change, isLoading, trend }) => (
@@ -214,75 +258,91 @@ export default function Dashboard({ onNavigateToPatient }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
+        {/* Current Queue */}
         <Card className="bg-card">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <span>Recent Activity</span>
+              <Users className="h-5 w-5 text-primary" />
+              <span>Current Queue</span>
+              <Badge variant="secondary" className="ml-auto">
+                {queueData.length} waiting
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {queueLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center space-x-3">
-                    <div className="h-10 w-10 bg-muted animate-pulse rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
-                      <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-8 w-8 bg-muted animate-pulse rounded-full" />
+                      <div className="h-4 bg-muted animate-pulse rounded w-24" />
                     </div>
+                    <div className="h-4 bg-muted animate-pulse rounded w-12" />
                   </div>
                 ))}
               </div>
-            ) : stats?.recentActivity?.length > 0 ? (
-              <div className="space-y-4">
-                {stats.recentActivity.slice(0, 8).map((appointment) => (
+            ) : queueData.length > 0 ? (
+              <div className="space-y-3">
+                {queueData.map((patient, index) => (
                   <div
-                    key={appointment.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer"
-                    onClick={() => handleAppointmentClick(appointment.patientId)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleAppointmentClick(appointment.patientId);
-                      }
-                    }}
-                    aria-label={`Appointment with ${appointment.patientName}`}
+                    key={patient.id}
+                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                      index === 0 
+                        ? 'bg-primary/10 border border-primary/20' 
+                        : 'bg-muted/50 hover:bg-muted/70'
+                    }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {appointment.patientName?.split(' ').map(n => n[0]).join('') || '??'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm text-foreground">
-                          {appointment.patientName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(appointment.appointmentDate).toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {appointment.reason || 'No reason specified'}
-                        </p>
+                      {index === 0 && (
+                        <div className="flex items-center space-x-2">
+                          <ArrowRight className="h-4 w-4 text-primary" />
+                          <Badge variant="default" className="text-xs px-2 py-1">
+                            Next
+                          </Badge>
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className={`font-medium text-sm ${
+                          index === 0 ? 'text-primary' : 'text-foreground'
+                        }`}>
+                          {patient.firstName} {patient.lastName}
+                        </span>
+                        {index === 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            Ready to see doctor
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <Badge 
-                      variant="outline" 
-                      className={getStatusColor(appointment.status)}
-                    >
-                      {appointment.status}
-                    </Badge>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className={`text-sm font-medium ${
+                        getWaitingTimeColor(patient.waitingTimeMinutes)
+                      }`}>
+                        {formatWaitingTime(patient.waitingTimeMinutes)}
+                      </span>
+                    </div>
                   </div>
                 ))}
+                {queueData.length > 5 && (
+                  <div className="pt-2 border-t">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => setCurrentSection('queue')}
+                    >
+                      View Full Queue ({queueData.length} patients)
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No recent appointments</p>
+                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No patients in queue</p>
+                <p className="text-xs mt-1">Queue is currently empty</p>
               </div>
             )}
           </CardContent>
@@ -323,6 +383,16 @@ export default function Dashboard({ onNavigateToPatient }) {
                 </div>
                 <Badge variant="outline" className="text-purple-600 border-purple-200">
                   {stats?.totalPatients || 0}
+                </Badge>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-orange-600" />
+                  <span className="text-sm font-medium">Patients Waiting</span>
+                </div>
+                <Badge variant="outline" className="text-orange-600 border-orange-200">
+                  {queueData.length}
                 </Badge>
               </div>
               
