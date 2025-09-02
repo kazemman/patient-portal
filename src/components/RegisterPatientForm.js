@@ -211,6 +211,12 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
       }
 
       if (!response.ok) {
+        // Handle 400 validation errors specifically
+        if (response.status === 400 && result.errors) {
+          // Show specific field validation errors
+          setErrors(result.errors);
+          throw new Error('Please correct the validation errors above');
+        }
         throw new Error(result.message || result.error || 'Registration failed');
       }
 
