@@ -129,6 +129,10 @@ export async function POST(request: NextRequest) {
       medical_aid_number,
       telegram_user_id,
       id_image_url,
+      address,
+      emergency_contact_name,
+      emergency_contact_phone,
+      emergency_contact_relationship,
       checkOnly = false,
       forceDuplicate = false
     } = requestBody;
@@ -187,6 +191,23 @@ export async function POST(request: NextRequest) {
       errors.telegram_user_id = 'Telegram user ID must be a numeric string if provided';
     }
 
+    // Optional field validations for new fields
+    if (address && (typeof address !== 'string' || address.trim().length > 500)) {
+      errors.address = 'Address must be a string with maximum 500 characters if provided';
+    }
+
+    if (emergency_contact_name && (typeof emergency_contact_name !== 'string' || emergency_contact_name.trim().length < 2 || emergency_contact_name.trim().length > 100)) {
+      errors.emergency_contact_name = 'Emergency contact name must be 2-100 characters if provided';
+    }
+
+    if (emergency_contact_phone && (typeof emergency_contact_phone !== 'string' || !validatePhone(emergency_contact_phone))) {
+      errors.emergency_contact_phone = 'Valid phone number is required if emergency contact phone is provided';
+    }
+
+    if (emergency_contact_relationship && (typeof emergency_contact_relationship !== 'string' || emergency_contact_relationship.trim().length < 2 || emergency_contact_relationship.trim().length > 50)) {
+      errors.emergency_contact_relationship = 'Emergency contact relationship must be 2-50 characters if provided';
+    }
+
     if (Object.keys(errors).length > 0) {
       return NextResponse.json({
         error: 'Validation failed',
@@ -208,7 +229,11 @@ export async function POST(request: NextRequest) {
       medical_aid: medical_aid ? medical_aid.trim() : null,
       medical_aid_number: medical_aid_number ? medical_aid_number.trim() : null,
       telegram_user_id: telegram_user_id || null,
-      id_image_url: id_image_url || null
+      id_image_url: id_image_url || null,
+      address: address ? address.trim() : null,
+      emergency_contact_name: emergency_contact_name ? emergency_contact_name.trim() : null,
+      emergency_contact_phone: emergency_contact_phone ? normalizePhone(emergency_contact_phone) : null,
+      emergency_contact_relationship: emergency_contact_relationship ? emergency_contact_relationship.trim() : null
     };
 
     // Check for duplicates
@@ -248,6 +273,10 @@ export async function POST(request: NextRequest) {
       medicalAidNumber: normalizedData.medical_aid_number,
       telegramUserId: normalizedData.telegram_user_id,
       idImageUrl: normalizedData.id_image_url,
+      address: normalizedData.address,
+      emergencyContactName: normalizedData.emergency_contact_name,
+      emergencyContactPhone: normalizedData.emergency_contact_phone,
+      emergencyContactRelationship: normalizedData.emergency_contact_relationship,
       active: true,
       createdAt: now,
       updatedAt: now

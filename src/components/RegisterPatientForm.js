@@ -45,7 +45,11 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
     passport_country: '',
     medical_aid: '',
     medical_aid_number: '',
-    telegram_user_id: ''
+    telegram_user_id: '',
+    address: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    emergency_contact_relationship: ''
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -288,7 +292,11 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
       passport_country: '',
       medical_aid: '',
       medical_aid_number: '',
-      telegram_user_id: ''
+      telegram_user_id: '',
+      address: '',
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
+      emergency_contact_relationship: ''
     });
     setSelectedFile(null);
     setFilePreview(null);
@@ -319,6 +327,9 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
               <div><span className="font-medium">Full Name:</span> {successData.firstName} {successData.lastName}</div>
               <div><span className="font-medium">Phone:</span> {successData.phone}</div>
               <div><span className="font-medium">Email:</span> {successData.email || 'Not provided'}</div>
+              {successData.address && (
+                <div className="md:col-span-2"><span className="font-medium">Address:</span> {successData.address}</div>
+              )}
             </div>
           </div>
 
@@ -347,6 +358,27 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
               )}
             </div>
           </div>
+
+          {/* Emergency Contact Information */}
+          {(successData.emergencyContactName || successData.emergencyContactPhone) && (
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <UserRoundPlus className="w-4 h-4" />
+                Emergency Contact
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {successData.emergencyContactName && (
+                  <div><span className="font-medium">Contact Name:</span> {successData.emergencyContactName}</div>
+                )}
+                {successData.emergencyContactPhone && (
+                  <div><span className="font-medium">Contact Phone:</span> {successData.emergencyContactPhone}</div>
+                )}
+                {successData.emergencyContactRelationship && (
+                  <div><span className="font-medium">Relationship:</span> {successData.emergencyContactRelationship}</div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Medical Aid Information */}
           {(successData.medicalAid || successData.medicalAidNumber) && (
@@ -474,6 +506,75 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
                   />
                   {errors.email && (
                     <p id="email-error" className="text-sm text-destructive mt-1">{errors.email}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    placeholder="Street address, city, postal code (Optional)"
+                    className={errors.address ? 'border-destructive' : ''}
+                    aria-describedby={errors.address ? 'address-error' : undefined}
+                  />
+                  {errors.address && (
+                    <p id="address-error" className="text-sm text-destructive mt-1">{errors.address}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Emergency Contact Information */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Emergency Contact Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
+                  <Input
+                    id="emergency_contact_name"
+                    value={formData.emergency_contact_name}
+                    onChange={(e) => handleInputChange('emergency_contact_name', e.target.value)}
+                    placeholder="Full name (Optional)"
+                    className={errors.emergency_contact_name ? 'border-destructive' : ''}
+                    aria-describedby={errors.emergency_contact_name ? 'emergency_contact_name-error' : undefined}
+                  />
+                  {errors.emergency_contact_name && (
+                    <p id="emergency_contact_name-error" className="text-sm text-destructive mt-1">{errors.emergency_contact_name}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
+                  <Input
+                    id="emergency_contact_phone"
+                    type="tel"
+                    value={formData.emergency_contact_phone}
+                    onChange={(e) => handleInputChange('emergency_contact_phone', e.target.value)}
+                    placeholder="0123456789 or +27123456789 (Optional)"
+                    className={errors.emergency_contact_phone ? 'border-destructive' : ''}
+                    aria-describedby={errors.emergency_contact_phone ? 'emergency_contact_phone-error' : undefined}
+                  />
+                  {errors.emergency_contact_phone && (
+                    <p id="emergency_contact_phone-error" className="text-sm text-destructive mt-1">{errors.emergency_contact_phone}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="emergency_contact_relationship">Relationship to Patient</Label>
+                  <Input
+                    id="emergency_contact_relationship"
+                    value={formData.emergency_contact_relationship}
+                    onChange={(e) => handleInputChange('emergency_contact_relationship', e.target.value)}
+                    placeholder="e.g., spouse, parent, sibling, friend (Optional)"
+                    className={errors.emergency_contact_relationship ? 'border-destructive' : ''}
+                    aria-describedby={errors.emergency_contact_relationship ? 'emergency_contact_relationship-error' : undefined}
+                  />
+                  {errors.emergency_contact_relationship && (
+                    <p id="emergency_contact_relationship-error" className="text-sm text-destructive mt-1">{errors.emergency_contact_relationship}</p>
                   )}
                 </div>
               </div>
