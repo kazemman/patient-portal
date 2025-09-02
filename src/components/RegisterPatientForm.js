@@ -315,8 +315,8 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
               Personal Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div><span className="font-medium">Patient ID:</span> {successData.patient_id}</div>
-              <div><span className="font-medium">Full Name:</span> {successData.first_name} {successData.last_name}</div>
+              <div><span className="font-medium">Patient ID:</span> {successData.id}</div>
+              <div><span className="font-medium">Full Name:</span> {successData.firstName} {successData.lastName}</div>
               <div><span className="font-medium">Phone:</span> {successData.phone}</div>
               <div><span className="font-medium">Email:</span> {successData.email || 'Not provided'}</div>
             </div>
@@ -331,36 +331,36 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="font-medium">ID Type:</span> {
-                  successData.id_type === 'sa_id' ? 'South African ID' : 
-                  successData.id_type === 'passport' ? 'Passport' : 
+                  successData.idType === 'sa_id' ? 'South African ID' : 
+                  successData.idType === 'passport' ? 'Passport' : 
                   'Not specified'
                 }
               </div>
-              {successData.sa_id_number && (
-                <div><span className="font-medium">SA ID Number:</span> {successData.sa_id_number}</div>
+              {successData.saIdNumber && (
+                <div><span className="font-medium">SA ID Number:</span> {successData.saIdNumber}</div>
               )}
-              {successData.passport_number && (
+              {successData.passportNumber && (
                 <>
-                  <div><span className="font-medium">Passport Number:</span> {successData.passport_number}</div>
-                  <div><span className="font-medium">Country of Issue:</span> {successData.passport_country || 'Not specified'}</div>
+                  <div><span className="font-medium">Passport Number:</span> {successData.passportNumber}</div>
+                  <div><span className="font-medium">Country of Issue:</span> {successData.passportCountry || 'Not specified'}</div>
                 </>
               )}
             </div>
           </div>
 
           {/* Medical Aid Information */}
-          {(successData.medical_aid || successData.medical_aid_number) && (
+          {(successData.medicalAid || successData.medicalAidNumber) && (
             <div className="bg-muted rounded-lg p-4">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
                 <FileCheck className="w-4 h-4" />
                 Medical Aid Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                {successData.medical_aid && (
-                  <div><span className="font-medium">Medical Aid Provider:</span> {successData.medical_aid}</div>
+                {successData.medicalAid && (
+                  <div><span className="font-medium">Medical Aid Provider:</span> {successData.medicalAid}</div>
                 )}
-                {successData.medical_aid_number && (
-                  <div><span className="font-medium">Medical Aid Number:</span> {successData.medical_aid_number}</div>
+                {successData.medicalAidNumber && (
+                  <div><span className="font-medium">Medical Aid Number:</span> {successData.medicalAidNumber}</div>
                 )}
               </div>
             </div>
@@ -372,7 +372,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
               Print Patient Info
             </Button>
             <Button 
-              onClick={() => onNavigateToDetails && onNavigateToDetails(successData.patient_id)}
+              onClick={() => onNavigateToDetails && onNavigateToDetails(successData.id)}
               className="flex-1"
             >
               Go to Patient Details
@@ -689,8 +689,8 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
                       <p>ID: {patient.patient_id}</p>
                       <p>Phone: {patient.phone}</p>
                       <p>Email: {patient.email}</p>
-                      {patient.sa_id_number && <p>SA ID: {patient.sa_id_number}</p>}
-                      {patient.passport_number && <p>Passport: {patient.passport_number}</p>}
+                      {patient.saIdNumber && <p>SA ID: {patient.saIdNumber}</p>}
+                      {patient.passportNumber && <p>Passport: {patient.passportNumber}</p>}
                     </div>
                   </div>
                   <Button
