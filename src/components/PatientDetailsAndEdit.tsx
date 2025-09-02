@@ -47,8 +47,10 @@ interface Patient {
   province: string;
   postalCode: string;
   idType: string;
-  idNumber: string;
-  medicalAidScheme?: string;
+  saIdNumber?: string;
+  passportNumber?: string;
+  passportCountry?: string;
+  medicalAid?: string;
   medicalAidNumber?: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
@@ -185,7 +187,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
         return acc;
       }, {} as Record<string, { from: any; to: any }>);
 
-      // Create the update payload
+      // Create the update payload with all fields including medical aid and ID fields
       const updateData = {
         patientId: parseInt(patient.id),
         firstName: editForm.firstName || patient.firstName,
@@ -201,6 +203,14 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
         emergencyContactName: editForm.emergencyContactName || patient.emergencyContactName || null,
         emergencyContactPhone: editForm.emergencyContactPhone || patient.emergencyContactPhone || null,
         emergencyContactRelationship: editForm.emergencyContactRelationship || patient.emergencyContactRelationship || null,
+        // Medical Aid fields
+        medicalAid: editForm.medicalAid || patient.medicalAid || null,
+        medicalAidNumber: editForm.medicalAidNumber || patient.medicalAidNumber || null,
+        // ID fields
+        idType: editForm.idType || patient.idType,
+        saIdNumber: editForm.saIdNumber || patient.saIdNumber || null,
+        passportNumber: editForm.passportNumber || patient.passportNumber || null,
+        passportCountry: editForm.passportCountry || patient.passportCountry || null,
         changes,
         reason: changeReason,
       };
@@ -548,6 +558,127 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
               </div>
             </div>
 
+            {/* ID Information Section */}
+            <div className="space-y-4">
+              <h4 className="font-semibold flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                ID Information
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="idType">ID Type</Label>
+                  {isEditing ? (
+                    <Select
+                      value={editForm.idType || ''}
+                      onValueChange={(value) => handleInputChange('idType', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select ID type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sa_id">South African ID</SelectItem>
+                        <SelectItem value="passport">Passport</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md">
+                      <Badge variant="secondary">
+                        {patient.idType === 'sa_id' ? 'South African ID' : 'Passport'}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+
+                {(patient.idType === 'sa_id' || editForm.idType === 'sa_id') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="saIdNumber">SA ID Number</Label>
+                    {isEditing ? (
+                      <Input
+                        id="saIdNumber"
+                        value={editForm.saIdNumber || ''}
+                        onChange={(e) => handleInputChange('saIdNumber', e.target.value)}
+                        placeholder="Enter SA ID number"
+                        maxLength={13}
+                      />
+                    ) : (
+                      <div className="p-3 bg-muted rounded-md font-mono">{patient.saIdNumber || 'Not provided'}</div>
+                    )}
+                  </div>
+                )}
+
+                {(patient.idType === 'passport' || editForm.idType === 'passport') && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="passportNumber">Passport Number</Label>
+                      {isEditing ? (
+                        <Input
+                          id="passportNumber"
+                          value={editForm.passportNumber || ''}
+                          onChange={(e) => handleInputChange('passportNumber', e.target.value)}
+                          placeholder="Enter passport number"
+                        />
+                      ) : (
+                        <div className="p-3 bg-muted rounded-md font-mono">{patient.passportNumber || 'Not provided'}</div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="passportCountry">Passport Country</Label>
+                      {isEditing ? (
+                        <Input
+                          id="passportCountry"
+                          value={editForm.passportCountry || ''}
+                          onChange={(e) => handleInputChange('passportCountry', e.target.value)}
+                          placeholder="Enter passport country"
+                        />
+                      ) : (
+                        <div className="p-3 bg-muted rounded-md">{patient.passportCountry || 'Not provided'}</div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Medical Aid Information Section */}
+            <div className="space-y-4">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Medical Aid Information
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="medicalAid">Medical Aid Scheme</Label>
+                  {isEditing ? (
+                    <Input
+                      id="medicalAid"
+                      value={editForm.medicalAid || ''}
+                      onChange={(e) => handleInputChange('medicalAid', e.target.value)}
+                      placeholder="Enter medical aid scheme (optional)"
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md">{patient.medicalAid || 'Not provided'}</div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="medicalAidNumber">Medical Aid Number</Label>
+                  {isEditing ? (
+                    <Input
+                      id="medicalAidNumber"
+                      value={editForm.medicalAidNumber || ''}
+                      onChange={(e) => handleInputChange('medicalAidNumber', e.target.value)}
+                      placeholder="Enter medical aid number (optional)"
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md font-mono">{patient.medicalAidNumber || 'Not provided'}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Address Information */}
             <div className="space-y-4">
               <h4 className="font-semibold flex items-center gap-2">
@@ -698,14 +829,25 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
               <div>
                 <Label className="text-sm font-medium">ID Type</Label>
                 <Badge variant="secondary" className="ml-2">
-                  {patient.idType}
+                  {patient.idType === 'sa_id' ? 'South African ID' : 'Passport'}
                 </Badge>
               </div>
               
               <div>
-                <Label className="text-sm font-medium">ID Number</Label>
-                <p className="font-mono text-sm mt-1">{patient.idNumber}</p>
+                <Label className="text-sm font-medium">
+                  {patient.idType === 'sa_id' ? 'SA ID Number' : 'Passport Number'}
+                </Label>
+                <p className="font-mono text-sm mt-1">
+                  {patient.idType === 'sa_id' ? (patient.saIdNumber || 'Not provided') : (patient.passportNumber || 'Not provided')}
+                </p>
               </div>
+
+              {patient.idType === 'passport' && patient.passportCountry && (
+                <div>
+                  <Label className="text-sm font-medium">Country</Label>
+                  <p className="text-sm mt-1">{patient.passportCountry}</p>
+                </div>
+              )}
 
               {patient.idImageUrl && (
                 <div>
@@ -733,19 +875,21 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {patient.medicalAidScheme ? (
+              {patient.medicalAid ? (
                 <>
                   <div>
                     <Label className="text-sm font-medium">Scheme</Label>
                     <Badge variant="outline" className="ml-2">
-                      {patient.medicalAidScheme}
+                      {patient.medicalAid}
                     </Badge>
                   </div>
                   
-                  <div>
-                    <Label className="text-sm font-medium">Member Number</Label>
-                    <p className="font-mono text-sm mt-1">{patient.medicalAidNumber}</p>
-                  </div>
+                  {patient.medicalAidNumber && (
+                    <div>
+                      <Label className="text-sm font-medium">Member Number</Label>
+                      <p className="font-mono text-sm mt-1">{patient.medicalAidNumber}</p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="text-muted-foreground text-sm">No medical aid information</p>
