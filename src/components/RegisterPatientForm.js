@@ -139,9 +139,13 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
         checkOnly: true
       };
 
-      const response = await fetch('/webhook/clinic-portal/register', {
+      const token = localStorage.getItem('bearer_token');
+      const response = await fetch('/api/webhook/clinic-portal/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(checkData)
       });
 
@@ -161,30 +165,33 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
     setSubmitError('');
 
     try {
-      const formDataObj = new FormData();
+      const token = localStorage.getItem('bearer_token');
       
-      // Add all form fields
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value) formDataObj.append(key, value);
+      // Since the API expects JSON, not FormData, let's send JSON
+      const registrationData = {
+        ...formData,
+        forceDuplicate: forceDuplicate ? 'true' : undefined
+      };
+
+      // Remove empty fields
+      Object.keys(registrationData).forEach(key => {
+        if (!registrationData[key]) {
+          delete registrationData[key];
+        }
       });
-
-      if (forceDuplicate) {
-        formDataObj.append('forceDuplicate', 'true');
-      }
-
-      // Add file
-      if (selectedFile) {
-        formDataObj.append('id_image', selectedFile);
-      }
 
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch('/webhook/clinic-portal/register', {
+      const response = await fetch('/api/webhook/clinic-portal/register', {
         method: 'POST',
-        body: formDataObj
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(registrationData)
       });
 
       clearInterval(progressInterval);
@@ -206,7 +213,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
       setIsSubmitting(false);
       setUploadProgress(0);
     }
-  }, [formData, selectedFile]);
+  }, [formData]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
