@@ -20,7 +20,7 @@ const APPOINTMENT_STATUSES = {
   scheduled: { label: 'Scheduled', color: 'bg-blue-100 text-blue-800' },
   completed: { label: 'Completed', color: 'bg-green-100 text-green-800' },
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
-  'no-show': { label: 'No Show', color: 'bg-gray-100 text-gray-800' }
+  'no_show': { label: 'No Show', color: 'bg-gray-100 text-gray-800' }
 };
 
 export default function Appointments({ className }) {
@@ -71,14 +71,23 @@ export default function Appointments({ className }) {
         })
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setAppointments(data.appointments || []);
-      } else {
-        toast.error('Failed to load appointments');
+      if (!response.ok) {
+        let errorMessage = 'Failed to load appointments';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        toast.error(errorMessage);
+        return;
       }
+      
+      const data = await response.json();
+      setAppointments(data.appointments || []);
     } catch (error) {
-      toast.error('Error loading appointments');
+      console.error('Error loading appointments:', error);
+      toast.error(`Error loading appointments: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -188,28 +197,42 @@ export default function Appointments({ className }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          appointment_datetime: `${formData.appointment_date}T${formData.appointment_time}`
+          patient_id: parseInt(formData.patient_id), // Ensure integer
+          appointment_datetime: `${formData.appointment_date}T${formData.appointment_time}:00.000Z`, // Add seconds and milliseconds
+          duration_minutes: formData.duration_minutes,
+          reason: formData.reason,
+          notes: formData.notes
         })
       });
       
-      if (response.ok) {
-        toast.success('Appointment created successfully');
-        setCreateModalOpen(false);
-        setFormData({
-          patient_id: '',
-          appointment_date: '',
-          appointment_time: '',
-          duration_minutes: 30,
-          reason: '',
-          notes: ''
-        });
-        fetchAppointments();
-      } else {
-        toast.error('Failed to create appointment');
+      if (!response.ok) {
+        let errorMessage = 'Failed to create appointment';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        toast.error(errorMessage);
+        return;
       }
+      
+      const data = await response.json();
+      toast.success('Appointment created successfully');
+      setCreateModalOpen(false);
+      setFormData({
+        patient_id: '',
+        appointment_date: '',
+        appointment_time: '',
+        duration_minutes: 30,
+        reason: '',
+        notes: ''
+      });
+      setPatientSearchTerm('');
+      fetchAppointments();
     } catch (error) {
-      toast.error('Error creating appointment');
+      console.error('Error creating appointment:', error);
+      toast.error(`Error creating appointment: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -228,19 +251,28 @@ export default function Appointments({ className }) {
         })
       });
       
-      if (response.ok) {
-        toast.success(`Appointment ${status} successfully`, {
-          action: status === 'cancelled' || status === 'no-show' ? {
-            label: 'Undo',
-            onClick: () => updateAppointmentStatus(appointmentId, 'scheduled')
-          } : undefined
-        });
-        fetchAppointments();
-      } else {
-        toast.error(`Failed to ${status} appointment`);
+      if (!response.ok) {
+        let errorMessage = `Failed to ${status} appointment`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        toast.error(errorMessage);
+        return;
       }
+      
+      toast.success(`Appointment ${status} successfully`, {
+        action: status === 'cancelled' || status === 'no_show' ? {
+          label: 'Undo',
+          onClick: () => updateAppointmentStatus(appointmentId, 'scheduled')
+        } : undefined
+      });
+      fetchAppointments();
     } catch (error) {
-      toast.error('Error updating appointment');
+      console.error('Error updating appointment:', error);
+      toast.error(`Error updating appointment: ${error.message}`);
     }
   }, [fetchAppointments]);
 
@@ -511,7 +543,7 @@ export default function Appointments({ className }) {
                 <SelectItem value="scheduled">Scheduled</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="no-show">No Show</SelectItem>
+                <SelectItem value="no_show">No Show</SelectItem>
               </SelectContent>
             </Select>
             
@@ -650,7 +682,7 @@ export default function Appointments({ className }) {
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction
-                                          onClick={() => updateAppointmentStatus(appointment.id, 'no-show')}
+                                          onClick={() => updateAppointmentStatus(appointment.id, 'no_show')}
                                         >
                                           Confirm No Show
                                         </AlertDialogAction>
