@@ -16,7 +16,10 @@ import {
   UserX,
   CheckCircle,
   BarChart3,
-  ArrowRight
+  ArrowRight,
+  Check,
+  X,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +37,7 @@ export default function Dashboard({ onNavigateToPatient }) {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [queueData, setQueueData] = useState([]);
   const [queueLoading, setQueueLoading] = useState(true);
+  const [attendingPatient, setAttendingPatient] = useState(null);
 
   const fetchQueue = useCallback(async () => {
     try {
@@ -52,6 +56,38 @@ export default function Dashboard({ onNavigateToPatient }) {
       setQueueData([]);
     } finally {
       setQueueLoading(false);
+    }
+  }, []);
+
+  const handleMarkAsAttended = useCallback(async (patient) => {
+    try {
+      setAttendingPatient(patient.checkinId);
+      
+      const response = await fetch('/api/webhook/clinic-portal/queue/attend', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          checkin_id: patient.checkinId,
+          notes: `Attended by staff at ${new Date().toLocaleTimeString()}`
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(`${patient.firstName} ${patient.lastName} marked as attended`);
+        // Refresh queue and stats
+        fetchQueue();
+        fetchStats();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to mark patient as attended');
+      }
+    } catch (error) {
+      console.error('Error marking patient as attended:', error);
+      toast.error('Failed to mark patient as attended');
+    } finally {
+      setAttendingPatient(null);
     }
   }, []);
 
@@ -258,7 +294,7 @@ export default function Dashboard({ onNavigateToPatient }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Current Queue */}
+        {/* Current Queue with Actions */}
         <Card className="bg-card">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center space-x-2">
@@ -293,7 +329,7 @@ export default function Dashboard({ onNavigateToPatient }) {
                         : 'bg-muted/50 hover:bg-muted/70'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 flex-1">
                       {index === 0 && (
                         <div className="flex items-center space-x-2">
                           <ArrowRight className="h-4 w-4 text-primary" />
@@ -315,13 +351,40 @@ export default function Dashboard({ onNavigateToPatient }) {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span className={`text-sm font-medium ${
-                        getWaitingTimeColor(patient.waitingTimeMinutes)
-                      }`}>
-                        {formatWaitingTime(patient.waitingTimeMinutes)}
-                      </span>
+                    
+                    <div className="flex items-center space-x-3">
+                      {/* Waiting Time */}
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className={`text-sm font-medium ${
+                          getWaitingTimeColor(patient.waitingTimeMinutes)
+                        }`}>
+                          {formatWaitingTime(patient.waitingTimeMinutes)}
+                        </span>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant={index === 0 ? "default" : "outline"}
+                          onClick={() => handleMarkAsAttended(patient)}
+                          disabled={attendingPatient === patient.checkinId}
+                          className="h-8 px-3 text-xs"
+                        >
+                          {attendingPatient === patient.checkinId ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Attending...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-3 w-3 mr-1" />
+                              {index === 0 ? 'See Now' : 'Mark Attended'}
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
