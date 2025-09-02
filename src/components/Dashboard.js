@@ -61,7 +61,7 @@ export default function Dashboard({ onNavigateToPatient }) {
 
   const handleMarkAsAttended = useCallback(async (patient) => {
     try {
-      setAttendingPatient(patient.checkinId);
+      setAttendingPatient(patient.id);
       
       const response = await fetch('/api/webhook/clinic-portal/queue/attend', {
         method: 'PUT',
@@ -69,7 +69,7 @@ export default function Dashboard({ onNavigateToPatient }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          checkin_id: patient.checkinId,
+          checkin_id: patient.id,
           notes: `Attended by staff at ${new Date().toLocaleTimeString()}`
         }),
       });
@@ -369,10 +369,10 @@ export default function Dashboard({ onNavigateToPatient }) {
                           size="sm"
                           variant={index === 0 ? "default" : "outline"}
                           onClick={() => handleMarkAsAttended(patient)}
-                          disabled={attendingPatient === patient.checkinId}
+                          disabled={attendingPatient === patient.id}
                           className="h-8 px-3 text-xs"
                         >
-                          {attendingPatient === patient.checkinId ? (
+                          {attendingPatient === patient.id ? (
                             <>
                               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                               Attending...
