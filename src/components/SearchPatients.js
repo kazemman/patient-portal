@@ -72,32 +72,52 @@ const SearchPatients = ({
     setError(null);
 
     try {
-      const response = await fetch('/webhook/clinic-portal/search', {
-        method: 'POST',
+      // Use the existing patients search API with GET request
+      const params = new URLSearchParams({
+        q: debouncedQuery,
+        limit: pageSize.toString()
+      });
+
+      const response = await fetch(`/api/patients/search?${params.toString()}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          query: debouncedQuery,
-          filter: activeFilter,
-          page: currentPage,
-          pageSize: pageSize,
-          sortField: sortField,
-          sortDirection: sortDirection
-        }),
         signal: newAbortController.signal
       });
 
       if (!response.ok) {
-        throw new Error('Search failed');
+        let errorMessage = 'Failed to search patients';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      setResults(data.results || []);
-      setTotalResults(data.total || 0);
+      
+      // Transform API response to match component expectations
+      const transformedResults = (data.patients || []).map(patient => ({
+        id: patient.id,
+        name: patient.firstName,
+        surname: patient.lastName,
+        phone: patient.phone,
+        email: patient.email,
+        id_type: patient.idType,
+        id_value: patient.idType === 'sa_id' ? patient.saIdNumber : patient.passportNumber,
+        medical_aid: patient.medicalAid,
+        last_visit: null // This field is not available in the current API
+      }));
+      
+      setResults(transformedResults);
+      setTotalResults(data.total || transformedResults.length);
     } catch (err) {
       if (err.name !== 'AbortError') {
-        setError('Failed to search patients. Please try again.');
+        console.error('Search error:', err);
+        setError(err.message || 'Failed to search patients. Please try again.');
         setResults([]);
         setTotalResults(0);
       }
@@ -105,7 +125,7 @@ const SearchPatients = ({
       setLoading(false);
       setAbortController(null);
     }
-  }, [debouncedQuery, currentPage, pageSize, sortField, sortDirection, activeFilter, abortController]);
+  }, [debouncedQuery, currentPage, pageSize, abortController]);
 
   const handleSort = (field) => {
     if (sortField === field) {
