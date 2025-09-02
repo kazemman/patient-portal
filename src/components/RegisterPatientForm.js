@@ -35,6 +35,7 @@ const COUNTRIES = [
 
 export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAnother }) {
   const [formData, setFormData] = useState({
+    gender: '',
     first_name: '',
     last_name: '',
     phone: '',
@@ -283,6 +284,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
 
   const resetForm = useCallback(() => {
     setFormData({
+      gender: '',
       first_name: '',
       last_name: '',
       phone: '',
@@ -451,6 +453,23 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
             <div>
               <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
+                    <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.gender && (
+                    <p className="text-sm text-destructive mt-1">{errors.gender}</p>
+                  )}
+                </div>
+
                 <div>
                   <Label htmlFor="first_name">First Name *</Label>
                   <Input
