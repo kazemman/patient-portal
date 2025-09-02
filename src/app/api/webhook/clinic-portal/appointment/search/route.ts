@@ -181,10 +181,24 @@ export async function POST(request: NextRequest) {
 
     const total = countResult[0]?.count || 0;
 
-    // Format response with nested patient object and renamed fields
+    // Format response with flattened patient data and snake_case fields to match component expectations
     const formattedAppointments = results.map(row => ({
       id: row.id,
       patientId: row.patientId,
+      // Component expects snake_case field names
+      appointment_date: row.appointmentDate,
+      duration_minutes: row.durationMinutes,
+      reason: row.reason,
+      notes: row.notes,
+      status: row.status,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      // Component expects flattened patient data
+      patient_name: `${row.patientFirstName} ${row.patientLastName}`.trim(),
+      patient_phone: row.patientPhone,
+      patient_email: row.patientEmail,
+      patient_avatar: null, // Add placeholder for avatar
+      // Keep nested patient object for backward compatibility
       patient: {
         id: row.patientId,
         firstName: row.patientFirstName,
@@ -197,14 +211,7 @@ export async function POST(request: NextRequest) {
         passportCountry: row.patientPassportCountry,
         medicalAid: row.patientMedicalAid,
         medicalAidNumber: row.patientMedicalAidNumber
-      },
-      appointmentDatetime: row.appointmentDate,
-      durationMinutes: row.durationMinutes,
-      reason: row.reason,
-      notes: row.notes,
-      status: row.status,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
+      }
     }));
 
     return NextResponse.json({
