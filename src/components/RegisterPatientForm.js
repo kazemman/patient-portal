@@ -300,7 +300,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
   // Success view
   if (successData) {
     return (
-      <Card className="max-w-2xl mx-auto">
+      <Card className="max-w-3xl mx-auto">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
             <Check className="w-8 h-8 text-green-600" />
@@ -308,15 +308,63 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
           <CardTitle className="text-2xl font-heading">Registration Successful!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Personal Information */}
           <div className="bg-muted rounded-lg p-4">
-            <h3 className="font-semibold mb-2">Patient Information</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <UserRoundPlus className="w-4 h-4" />
+              Personal Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div><span className="font-medium">Patient ID:</span> {successData.patient_id}</div>
-              <div><span className="font-medium">Name:</span> {successData.first_name} {successData.last_name}</div>
+              <div><span className="font-medium">Full Name:</span> {successData.first_name} {successData.last_name}</div>
               <div><span className="font-medium">Phone:</span> {successData.phone}</div>
               <div><span className="font-medium">Email:</span> {successData.email || 'Not provided'}</div>
             </div>
           </div>
+
+          {/* Identification Information */}
+          <div className="bg-muted rounded-lg p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <IdCard className="w-4 h-4" />
+              Identification
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="font-medium">ID Type:</span> {
+                  successData.id_type === 'sa_id' ? 'South African ID' : 
+                  successData.id_type === 'passport' ? 'Passport' : 
+                  'Not specified'
+                }
+              </div>
+              {successData.sa_id_number && (
+                <div><span className="font-medium">SA ID Number:</span> {successData.sa_id_number}</div>
+              )}
+              {successData.passport_number && (
+                <>
+                  <div><span className="font-medium">Passport Number:</span> {successData.passport_number}</div>
+                  <div><span className="font-medium">Country of Issue:</span> {successData.passport_country || 'Not specified'}</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Medical Aid Information */}
+          {(successData.medical_aid || successData.medical_aid_number) && (
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <FileCheck className="w-4 h-4" />
+                Medical Aid Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {successData.medical_aid && (
+                  <div><span className="font-medium">Medical Aid Provider:</span> {successData.medical_aid}</div>
+                )}
+                {successData.medical_aid_number && (
+                  <div><span className="font-medium">Medical Aid Number:</span> {successData.medical_aid_number}</div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Button onClick={handlePrint} variant="outline" className="flex-1">
