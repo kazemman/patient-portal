@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from 'react';
-import AppLayout from '@/components/AppLayout';
-import Dashboard from '@/components/Dashboard';
-import RegisterPatientForm from '@/components/RegisterPatientForm';
-import SearchPatients from '@/components/SearchPatients';
+import { AppLayout } from '@/components/AppLayout';
 import PatientDetailsAndEdit from '@/components/PatientDetailsAndEdit';
-import Appointments from '@/components/Appointments';
 import AuditLogs from '@/components/AuditLogs';
 import { PatientCheckin } from '@/components/PatientCheckIn';
 import { QueueDashboard } from '@/components/QueueDashboard';
@@ -20,8 +16,10 @@ export default function HomePage() {
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [clinicStats, setClinicStats] = useState({
-    todayPatients: 12,
-    newRegistrations: 3
+    totalPatients: 0,
+    todayAppointments: 0,
+    waitingPatients: 0,
+    completedToday: 0
   });
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +40,11 @@ export default function HomePage() {
         if (userData) {
           try {
             const parsedUser = JSON.parse(userData);
-            setUser(parsedUser);
+            setUser({
+              name: parsedUser.fullName,
+              role: parsedUser.role,
+              email: parsedUser.email
+            });
           } catch (error) {
             console.error('Failed to parse user data:', error);
           }
@@ -58,7 +60,11 @@ export default function HomePage() {
         if (response.ok) {
           const data = await response.json();
           if (data.valid && data.user) {
-            setUser(data.user);
+            setUser({
+              name: data.user.fullName,
+              role: data.user.role,
+              email: data.user.email
+            });
             localStorage.setItem('user_data', JSON.stringify(data.user));
           } else {
             throw new Error('Invalid authentication response');
@@ -128,7 +134,7 @@ export default function HomePage() {
         return 'Patient Check-In';
       case 'queue':
         return 'Queue Management';
-      case 'checkin-stats':
+      case 'analytics':
         return 'Check-In Analytics';
       case 'users':
         return 'User Management';
@@ -158,36 +164,55 @@ export default function HomePage() {
     switch (currentSection) {
       case 'dashboard':
         return (
-          <div className="p-6">
-            <Dashboard onNavigateToPatient={handleNavigateToPatient} />
+          <div className="text-center space-y-6 p-8">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-2xl">📊</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to InvoTech Health Care</h2>
+              <p className="text-gray-600">
+                Your clinic management dashboard. Use the navigation menu to access different sections.
+              </p>
+            </div>
           </div>
         );
       
       case 'register':
         return (
-          <div className="p-6">
-            <RegisterPatientForm
-              onNavigateToDetails={handleNavigateToPatient}
-              onRegisterAnother={handleRegisterAnother}
-            />
+          <div className="text-center space-y-6 p-8">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-2xl">👤</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Register Patient</h2>
+              <p className="text-gray-600">Patient registration form will be available here.</p>
+            </div>
           </div>
         );
       
       case 'search':
         return (
-          <div className="p-6">
-            <SearchPatients
-              onNavigateToPatientDetails={handleNavigateToPatient}
-              onNavigateToRegisterPatient={handleNavigateToRegister}
-              onPrintPatient={handlePrintPatient}
-            />
+          <div className="text-center space-y-6 p-8">
+            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-2xl">🔍</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Search Patients</h2>
+              <p className="text-gray-600">Patient search functionality will be available here.</p>
+            </div>
           </div>
         );
       
       case 'appointments':
         return (
-          <div className="p-6">
-            <Appointments />
+          <div className="text-center space-y-6 p-8">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-2xl">📅</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Appointments</h2>
+              <p className="text-gray-600">Appointment management will be available here.</p>
+            </div>
           </div>
         );
       
@@ -198,23 +223,17 @@ export default function HomePage() {
       
       case 'checkin':
         return (
-          <div className="p-6">
-            <PatientCheckin />
-          </div>
+          <PatientCheckin />
         );
       
       case 'queue':
         return (
-          <div className="p-6">
-            <QueueDashboard />
-          </div>
+          <QueueDashboard />
         );
       
-      case 'checkin-stats':
+      case 'analytics':
         return (
-          <div className="p-6">
-            <CheckInStats />
-          </div>
+          <CheckInStats />
         );
       
       case 'users':
@@ -224,24 +243,28 @@ export default function HomePage() {
       
       case 'patient-details':
         return selectedPatientId ? (
-          <div className="p-6">
-            <PatientDetailsAndEdit
-              patientId={selectedPatientId}
-              onPatientUpdated={handlePatientUpdated}
-            />
-          </div>
+          <PatientDetailsAndEdit
+            patientId={selectedPatientId}
+            onPatientUpdated={handlePatientUpdated}
+          />
         ) : (
-          <div className="p-6">
-            <div className="text-center text-muted-foreground">
-              No patient selected
-            </div>
+          <div className="text-center text-muted-foreground p-8">
+            No patient selected
           </div>
         );
       
       default:
         return (
-          <div className="p-6">
-            <Dashboard onNavigateToPatient={handleNavigateToPatient} />
+          <div className="text-center space-y-6 p-8">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-2xl">📊</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to InvoTech Health Care</h2>
+              <p className="text-gray-600">
+                Your clinic management dashboard. Use the navigation menu to access different sections.
+              </p>
+            </div>
           </div>
         );
     }
@@ -271,6 +294,7 @@ export default function HomePage() {
       pageTitle={getPageTitle()}
       onNavigate={handleNavigation}
       clinicStats={clinicStats}
+      user={user}
     >
       {renderCurrentSection()}
     </AppLayout>
