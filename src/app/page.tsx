@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import Dashboard from '@/components/Dashboard';
 import PatientDetailsAndEdit from '@/components/PatientDetailsAndEdit';
@@ -17,12 +17,13 @@ import Appointments from '@/components/Appointments';
 function MainContent() {
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [selectedPatientId, setSelectedPatientId] = useState(null);
-  const [clinicStats] = useState({
+  const [clinicStats, setClinicStats] = useState({
     totalPatients: 0,
     todayAppointments: 0,
     waitingPatients: 0,
     completedToday: 0
   });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   // Get user data from localStorage for immediate display
   const getUserData = () => {
@@ -44,6 +45,41 @@ function MainContent() {
 
   const user = getUserData();
 
+  // Fetch real clinic stats
+  const fetchClinicStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const response = await fetch('/api/webhook/clinic-portal/dashboard-stats');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setClinicStats({
+          totalPatients: data.totalPatients || 0,
+          todayAppointments: data.todayAppointments || 0,
+          waitingPatients: data.waitingPatients || 0,
+          completedToday: data.completedToday || 0
+        });
+      } else {
+        console.error('Failed to fetch clinic stats');
+        // Keep using fallback data
+      }
+    } catch (error) {
+      console.error('Error fetching clinic stats:', error);
+      // Keep using fallback data
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  // Load stats on component mount
+  useEffect(() => {
+    fetchClinicStats();
+    
+    // Refresh stats every 30 seconds
+    const interval = setInterval(fetchClinicStats, 30000);
+    return () => clearInterval(interval);
+  }, [fetchClinicStats]);
+
   const handleNavigation = useCallback((sectionId, href) => {
     setCurrentSection(sectionId);
     setSelectedPatientId(null);
@@ -64,7 +100,9 @@ function MainContent() {
 
   const handlePatientUpdated = useCallback((updatedPatient) => {
     console.log('Patient updated:', updatedPatient);
-  }, []);
+    // Refresh stats when patient is updated
+    fetchClinicStats();
+  }, [fetchClinicStats]);
 
   const handlePrintPatient = useCallback((patientId) => {
     setSelectedPatientId(patientId);

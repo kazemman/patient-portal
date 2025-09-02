@@ -24,60 +24,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnalyticsDashboard } from '@/components/Analytics';
 
-// Sample data for immediate display
-const SAMPLE_STATS = {
-  appointmentsToday: 12,
-  appointmentsTodayChange: 8,
-  totalPatients: 2,
-  totalPatientsChange: 25,
-  todayPatients: 8,
-  todayPatientsChange: -5,
-  newRegistrations: 3,
-  newRegistrationsChange: 50,
-  upcomingAppointments: 18,
-  recentActivity: [
-    {
-      id: 1,
-      patientName: "John Smith",
-      appointmentDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-      status: "scheduled",
-      reason: "General Checkup"
-    },
-    {
-      id: 2,
-      patientName: "Sarah Johnson",
-      appointmentDate: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-      status: "completed",
-      reason: "Follow-up Consultation"
-    },
-    {
-      id: 3,
-      patientName: "Michael Brown",
-      appointmentDate: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-      status: "scheduled",
-      reason: "Blood Pressure Check"
-    },
-    {
-      id: 4,
-      patientName: "Emma Davis",
-      appointmentDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      status: "completed",
-      reason: "Diabetes Management"
-    },
-    {
-      id: 5,
-      patientName: "David Wilson",
-      appointmentDate: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-      status: "scheduled",
-      reason: "Vaccination"
-    }
-  ]
-};
-
 export default function Dashboard({ onNavigateToPatient }) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState(SAMPLE_STATS);
-  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -85,21 +35,34 @@ export default function Dashboard({ onNavigateToPatient }) {
   const fetchStats = useCallback(async () => {
     try {
       setError(null);
-      const response = await fetch('/api/webhook/clinic-portal/stats');
+      const response = await fetch('/api/webhook/clinic-portal/dashboard-stats/detailed');
       
       if (!response.ok) {
         throw new Error(`Failed to fetch stats: ${response.statusText}`);
       }
       
       const data = await response.json();
-      setStats(data);
+      
+      // Transform the data to match component expectations
+      const transformedStats = {
+        appointmentsToday: data.todayAppointments || 0,
+        appointmentsTodayChange: data.trends?.appointmentGrowth ? parseFloat(data.trends.appointmentGrowth.replace(/[+%]/g, '')) : 0,
+        totalPatients: data.totalPatients || 0,
+        totalPatientsChange: data.trends?.patientGrowth ? parseFloat(data.trends.patientGrowth.replace(/[+%]/g, '')) : 0,
+        todayPatients: data.completedToday || 0,
+        todayPatientsChange: 0, // Could add this to API later
+        newRegistrations: 0, // Could add this to API later
+        newRegistrationsChange: 0,
+        upcomingAppointments: data.upcomingAppointments || 0,
+        recentActivity: data.recentActivity || []
+      };
+      
+      setStats(transformedStats);
       setLastRefresh(new Date());
     } catch (err) {
       console.error('Error fetching stats:', err);
       setError(err.message);
-      // Keep using sample data on error
-      setStats(SAMPLE_STATS);
-      toast.error('Using sample data - API not available');
+      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -121,12 +84,6 @@ export default function Dashboard({ onNavigateToPatient }) {
   }, [onNavigateToPatient]);
 
   useEffect(() => {
-    // Start with sample data immediately
-    setStats(SAMPLE_STATS);
-    setLastRefresh(new Date());
-    setLoading(false);
-    
-    // Try to fetch real data
     fetchStats();
   }, [fetchStats]);
 
@@ -146,6 +103,7 @@ export default function Dashboard({ onNavigateToPatient }) {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-200';
+      case 'no_show':
       case 'no-show':
         return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
@@ -223,7 +181,7 @@ export default function Dashboard({ onNavigateToPatient }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           icon={Calendar}
-          title="Appointments Today"
+          title="Today's Appointments"
           value={stats?.appointmentsToday || 0}
           change={stats?.appointmentsTodayChange}
           isLoading={loading}
@@ -239,7 +197,7 @@ export default function Dashboard({ onNavigateToPatient }) {
         />
         <StatCard
           icon={CheckCircle}
-          title="Today's Visits"
+          title="Completed Today"
           value={stats?.todayPatients || 0}
           change={stats?.todayPatientsChange}
           isLoading={loading}
@@ -247,21 +205,21 @@ export default function Dashboard({ onNavigateToPatient }) {
         />
         <StatCard
           icon={SquareActivity}
-          title="New Registrations"
-          value={stats?.newRegistrations || 0}
+          title="Upcoming (7 days)"
+          value={stats?.upcomingAppointments || 0}
           change={stats?.newRegistrationsChange}
           isLoading={loading}
-          trend="This month"
+          trend="Next week"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming Appointments */}
+        {/* Recent Activity */}
         <Card className="bg-card">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-primary" />
-              <span>Upcoming Appointments</span>
+              <span>Recent Activity</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -279,7 +237,7 @@ export default function Dashboard({ onNavigateToPatient }) {
               </div>
             ) : stats?.recentActivity?.length > 0 ? (
               <div className="space-y-4">
-                {stats.recentActivity.slice(0, 5).map((appointment) => (
+                {stats.recentActivity.slice(0, 8).map((appointment) => (
                   <div
                     key={appointment.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer"
@@ -306,6 +264,9 @@ export default function Dashboard({ onNavigateToPatient }) {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(appointment.appointmentDate).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {appointment.reason || 'No reason specified'}
                         </p>
                       </div>
                     </div>
@@ -340,25 +301,29 @@ export default function Dashboard({ onNavigateToPatient }) {
               <div className="flex items-center justify-between p-3 rounded-lg border">
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium">Upcoming Appointments</span>
+                  <span className="text-sm font-medium">Today's Appointments</span>
                 </div>
-                <Badge variant="secondary">{stats?.upcomingAppointments || 0}</Badge>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 rounded-lg border">
-                <div className="flex items-center space-x-2">
-                  <UserX className="h-4 w-4 text-red-600" />
-                  <span className="text-sm font-medium">This Week's No-shows</span>
-                </div>
-                <Badge variant="outline" className="text-red-600 border-red-200">TBD</Badge>
+                <Badge variant="secondary">{stats?.appointmentsToday || 0}</Badge>
               </div>
               
               <div className="flex items-center justify-between p-3 rounded-lg border">
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium">Completion Rate</span>
+                  <span className="text-sm font-medium">Completed Today</span>
                 </div>
-                <Badge variant="outline" className="text-green-600 border-green-200">TBD</Badge>
+                <Badge variant="outline" className="text-green-600 border-green-200">
+                  {stats?.todayPatients || 0}
+                </Badge>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-medium">Total Patients</span>
+                </div>
+                <Badge variant="outline" className="text-purple-600 border-purple-200">
+                  {stats?.totalPatients || 0}
+                </Badge>
               </div>
               
               <div className="mt-4 pt-4 border-t">

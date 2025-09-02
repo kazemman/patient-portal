@@ -1,0 +1,156 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/db';
+import { patients, appointments } from '@/db/schema';
+import { eq, and, gte, lte, desc, count } from 'drizzle-orm';
+
+export async function GET(request: NextRequest) {
+  try {
+    // Date calculations
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    const tomorrowStart = new Date(todayEnd.getTime() + 1);
+    const next7Days = new Date(tomorrowStart.getTime() + (7 * 24 * 60 * 60 * 1000));
+    
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    // Convert to ISO strings for database queries
+    const todayStartISO = todayStart.toISOString();
+    const todayEndISO = todayEnd.toISOString();
+    const tomorrowStartISO = tomorrowStart.toISOString();
+    const next7DaysISO = next7Days.toISOString();
+    const thisMonthStartISO = thisMonthStart.toISOString();
+    const lastMonthStartISO = lastMonthStart.toISOString();
+    const lastMonthEndISO = lastMonthEnd.toISOString();
+
+    // 1. Total active patients
+    const totalPatientsResult = await db.select({ count: count() })
+      .from(patients)
+      .where(eq(patients.active, true));
+    const totalPatients = totalPatientsResult[0]?.count || 0;
+
+    // 2. Today's appointments
+    const todayAppointmentsResult = await db.select({ count: count() })
+      .from(appointments)
+      .where(and(
+        gte(appointments.appointmentDate, todayStartISO),
+        lte(appointments.appointmentDate, todayEndISO)
+      ));
+    const todayAppointments = todayAppointmentsResult[0]?.count || 0;
+
+    // 3. Waiting patients (scheduled appointments today)
+    const waitingPatientsResult = await db.select({ count: count() })
+      .from(appointments)
+      .where(and(
+        gte(appointments.appointmentDate, todayStartISO),
+        lte(appointments.appointmentDate, todayEndISO),
+        eq(appointments.status, 'scheduled')
+      ));
+    const waitingPatients = waitingPatientsResult[0]?.count || 0;
+
+    // 4. Completed today
+    const completedTodayResult = await db.select({ count: count() })
+      .from(appointments)
+      .where(and(
+        gte(appointments.appointmentDate, todayStartISO),
+        lte(appointments.appointmentDate, todayEndISO),
+        eq(appointments.status, 'completed')
+      ));
+    const completedToday = completedTodayResult[0]?.count || 0;
+
+    // 5. Recent activity (last 10 appointments with patient details)
+    const recentActivityRaw = await db.select({
+      id: appointments.id,
+      appointmentDate: appointments.appointmentDate,
+      status: appointments.status,
+      reason: appointments.reason,
+      firstName: patients.firstName,
+      lastName: patients.lastName
+    })
+    .from(appointments)
+    .innerJoin(patients, eq(appointments.patientId, patients.id))
+    .orderBy(desc(appointments.appointmentDate))
+    .limit(10);
+
+    const recentActivity = recentActivityRaw.map(item => ({
+      id: item.id,
+      patientName: `${item.firstName} ${item.lastName}`,
+      appointmentDate: item.appointmentDate,
+      status: item.status as "scheduled" | "completed" | "cancelled" | "no_show",
+      reason: item.reason || ''
+    }));
+
+    // 6. Upcoming appointments (next 7 days excluding today)
+    const upcomingAppointmentsResult = await db.select({ count: count() })
+      .from(appointments)
+      .where(and(
+        gte(appointments.appointmentDate, tomorrowStartISO),
+        lte(appointments.appointmentDate, next7DaysISO)
+      ));
+    const upcomingAppointments = upcomingAppointmentsResult[0]?.count || 0;
+
+    // 7. Trends - New patients this month vs last month
+    const thisMonthPatientsResult = await db.select({ count: count() })
+      .from(patients)
+      .where(gte(patients.createdAt, thisMonthStartISO));
+    const thisMonthPatients = thisMonthPatientsResult[0]?.count || 0;
+
+    const lastMonthPatientsResult = await db.select({ count: count() })
+      .from(patients)
+      .where(and(
+        gte(patients.createdAt, lastMonthStartISO),
+        lte(patients.createdAt, lastMonthEndISO)
+      ));
+    const lastMonthPatients = lastMonthPatientsResult[0]?.count || 0;
+
+    // 8. Trends - Appointments this month vs last month
+    const thisMonthAppointmentsResult = await db.select({ count: count() })
+      .from(appointments)
+      .where(gte(appointments.appointmentDate, thisMonthStartISO));
+    const thisMonthAppointments = thisMonthAppointmentsResult[0]?.count || 0;
+
+    const lastMonthAppointmentsResult = await db.select({ count: count() })
+      .from(appointments)
+      .where(and(
+        gte(appointments.appointmentDate, lastMonthStartISO),
+        lte(appointments.appointmentDate, lastMonthEndISO)
+      ));
+    const lastMonthAppointments = lastMonthAppointmentsResult[0]?.count || 0;
+
+    // Calculate percentage changes with proper zero handling
+    const calculateGrowth = (current: number, previous: number): string => {
+      if (previous === 0) {
+        return current > 0 ? "+100.0%" : "0.0%";
+      }
+      const percentage = ((current - previous) / previous) * 100;
+      const sign = percentage >= 0 ? '+' : '';
+      return `${sign}${percentage.toFixed(1)}%`;
+    };
+
+    const patientGrowth = calculateGrowth(thisMonthPatients, lastMonthPatients);
+    const appointmentGrowth = calculateGrowth(thisMonthAppointments, lastMonthAppointments);
+
+    // Return comprehensive dashboard statistics
+    return NextResponse.json({
+      totalPatients,
+      todayAppointments,
+      waitingPatients,
+      completedToday,
+      recentActivity,
+      upcomingAppointments,
+      trends: {
+        patientGrowth,
+        appointmentGrowth
+      }
+    });
+
+  } catch (error) {
+    console.error('GET dashboard stats error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error: ' + error 
+    }, { status: 500 });
+  }
+}
