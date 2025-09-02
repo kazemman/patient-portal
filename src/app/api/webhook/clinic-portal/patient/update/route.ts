@@ -270,13 +270,18 @@ export async function PUT(request: NextRequest) {
     addFieldUpdate('lastName', lastName);
     addFieldUpdate('email', email);
     addFieldUpdate('phone', phone);
+    addFieldUpdate('dateOfBirth', dateOfBirth);
+    addFieldUpdate('gender', gender);
+    addFieldUpdate('address', address);
+    addFieldUpdate('city', city);
+    addFieldUpdate('province', province);
+    addFieldUpdate('postalCode', postalCode);
     addFieldUpdate('idType', idType);
     addFieldUpdate('saIdNumber', saIdNumber);
     addFieldUpdate('passportNumber', passportNumber);
     addFieldUpdate('passportCountry', passportCountry);
     addFieldUpdate('medicalAid', medicalAid);
     addFieldUpdate('medicalAidNumber', medicalAidNumber);
-    addFieldUpdate('address', address);
     addFieldUpdate('emergencyContactName', emergencyContactName);
     addFieldUpdate('emergencyContactPhone', emergencyContactPhone);
     addFieldUpdate('emergencyContactRelationship', emergencyContactRelationship);
@@ -334,26 +339,33 @@ export async function PUT(request: NextRequest) {
       await db.insert(patientAuditLog).values(auditEntries);
     }
 
-    // Format response to match expected structure
+    // Format response to match expected structure with ALL fields
     const patient = updatedPatient[0];
     const response = {
-      id: patient.id,
+      id: patient.id.toString(),
       firstName: patient.firstName,
       lastName: patient.lastName,
+      patientId: patient.id.toString(), // Add missing patientId field
       phone: patient.phone,
       email: patient.email,
+      dateOfBirth: patient.dateOfBirth, // Add missing dateOfBirth field
+      gender: patient.gender, // Add missing gender field
+      address: patient.address,
+      city: patient.city, // Add missing city field
+      province: patient.province, // Add missing province field
+      postalCode: patient.postalCode, // Add missing postalCode field
       idType: patient.idType,
       saIdNumber: patient.saIdNumber,
       passportNumber: patient.passportNumber,
       passportCountry: patient.passportCountry,
       medicalAid: patient.medicalAid,
       medicalAidNumber: patient.medicalAidNumber,
-      telegramUserId: patient.telegramUserId,
-      idImageUrl: patient.idImageUrl,
-      address: patient.address,
       emergencyContactName: patient.emergencyContactName,
       emergencyContactPhone: patient.emergencyContactPhone,
       emergencyContactRelationship: patient.emergencyContactRelationship,
+      idImageUrl: patient.idImageUrl,
+      avatarUrl: patient.avatarUrl, // Add missing avatarUrl field
+      telegramUserId: patient.telegramUserId,
       active: patient.active,
       createdAt: patient.createdAt,
       updatedAt: patient.updatedAt

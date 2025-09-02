@@ -41,28 +41,31 @@ export async function GET(
     
     const patientData = patient[0];
     
-    // Map database fields to component-expected fields
+    // Return consistent field names that match PUT API and component expectations
     const response = {
-      id: patientData.id,
+      id: patientData.id.toString(),
       firstName: patientData.firstName,
       lastName: patientData.lastName,
-      patientId: patientData.id, // Same as id
+      patientId: patientData.id.toString(),
       email: patientData.email,
       phone: patientData.phone,
-      dateOfBirth: null, // Missing schema field
-      gender: null, // Missing schema field
-      address: null, // Missing schema field
-      city: null, // Missing schema field
-      province: null, // Missing schema field
-      postalCode: null, // Missing schema field
+      dateOfBirth: patientData.dateOfBirth,
+      gender: patientData.gender,
+      address: patientData.address,
+      city: patientData.city,
+      province: patientData.province,
+      postalCode: patientData.postalCode,
       idType: patientData.idType,
-      idNumber: patientData.idType === 'sa_id' ? patientData.saIdNumber : patientData.passportNumber,
-      medicalAidScheme: patientData.medicalAid, // Mapped from medicalAid
+      saIdNumber: patientData.saIdNumber, // Use correct field name
+      passportNumber: patientData.passportNumber,
+      passportCountry: patientData.passportCountry,
+      medicalAid: patientData.medicalAid, // Use correct field name (not medicalAidScheme)
       medicalAidNumber: patientData.medicalAidNumber,
-      emergencyContactName: null, // Missing schema field
-      emergencyContactPhone: null, // Missing schema field
+      emergencyContactName: patientData.emergencyContactName,
+      emergencyContactPhone: patientData.emergencyContactPhone,
+      emergencyContactRelationship: patientData.emergencyContactRelationship,
       idImageUrl: patientData.idImageUrl,
-      avatarUrl: null, // Missing schema field
+      avatarUrl: patientData.avatarUrl,
       createdAt: patientData.createdAt,
       updatedAt: patientData.updatedAt,
       active: patientData.active
