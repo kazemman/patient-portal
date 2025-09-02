@@ -20,8 +20,8 @@ interface QueuePatient {
   idValue: string;
   medicalAid: string;
   medicalAidNumber: string;
-  checkin_time: string;
-  payment_method: 'medical_aid' | 'cash' | 'both';
+  checkinTime: string;
+  paymentMethod: 'medical_aid' | 'cash' | 'both';
   status: string;
   notes: string;
   waitingTimeMinutes: number;
@@ -67,10 +67,10 @@ export const QueueDashboard = () => {
       
       const data = await response.json();
       
-      // Ensure payment_method is always defined with a fallback
+      // Ensure paymentMethod is always defined with a fallback
       const processedData = data.map((patient: QueuePatient) => ({
         ...patient,
-        payment_method: patient.payment_method || 'cash',
+        paymentMethod: patient.paymentMethod || 'cash',
         firstName: patient.firstName || '',
         lastName: patient.lastName || '',
         phone: patient.phone || '',
@@ -90,7 +90,7 @@ export const QueueDashboard = () => {
         : 0;
       
       const paymentBreakdown = processedData.reduce((acc: any, p: QueuePatient) => {
-        const method = p.payment_method || 'cash';
+        const method = p.paymentMethod || 'cash';
         acc[method] = (acc[method] || 0) + 1;
         return acc;
       }, { medical_aid: 0, cash: 0, both: 0 });
@@ -145,7 +145,7 @@ export const QueueDashboard = () => {
 
     // Payment method filter
     if (paymentFilter !== 'all') {
-      filtered = filtered.filter(p => (p.payment_method || 'cash') === paymentFilter);
+      filtered = filtered.filter(p => (p.paymentMethod || 'cash') === paymentFilter);
     }
 
     // Wait time filter
@@ -164,7 +164,7 @@ export const QueueDashboard = () => {
     if (sortBy === 'waiting_time') {
       filtered.sort((a, b) => (b.waitingTimeMinutes || 0) - (a.waitingTimeMinutes || 0));
     } else if (sortBy === 'checkin_time') {
-      filtered.sort((a, b) => new Date(a.checkin_time || '').getTime() - new Date(b.checkin_time || '').getTime());
+      filtered.sort((a, b) => new Date(a.checkinTime || '').getTime() - new Date(b.checkinTime || '').getTime());
     }
 
     setFilteredPatients(filtered);
@@ -253,7 +253,7 @@ export const QueueDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Waiting</CardTitle>
@@ -294,6 +294,17 @@ export const QueueDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.paymentBreakdown.cash}</div>
+            <p className="text-xs text-muted-foreground">patients</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Both</CardTitle>
+            <PlusCircle className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.paymentBreakdown.both}</div>
             <p className="text-xs text-muted-foreground">patients</p>
           </CardContent>
         </Card>
@@ -411,15 +422,15 @@ export const QueueDashboard = () => {
                       <TableCell>
                         <Badge 
                           variant="outline" 
-                          className={`${getPaymentMethodColor(patient.payment_method)} flex items-center gap-1 w-fit`}
+                          className={`${getPaymentMethodColor(patient.paymentMethod)} flex items-center gap-1 w-fit`}
                         >
-                          {getPaymentMethodIcon(patient.payment_method)}
-                          {(patient.payment_method || 'cash').replace('_', ' ').toUpperCase()}
+                          {getPaymentMethodIcon(patient.paymentMethod)}
+                          {(patient.paymentMethod || 'cash').replace('_', ' ').toUpperCase()}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {patient.checkin_time ? new Date(patient.checkin_time).toLocaleTimeString() : '--'}
+                          {patient.checkinTime ? new Date(patient.checkinTime).toLocaleTimeString() : '--'}
                         </div>
                       </TableCell>
                       <TableCell>
