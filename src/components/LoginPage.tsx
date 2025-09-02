@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff, Loader2, Heart, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,38 +30,6 @@ export const ClinicLogin = ({ onLoginSuccess }: ClinicLoginProps) => {
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Check if already authenticated
-  useEffect(() => {
-    const token = localStorage.getItem('bearer_token');
-    if (token) {
-      // Verify token with backend
-      fetch('/api/webhook/clinic-portal/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => {
-        if (response.ok) {
-          // Already authenticated, redirect
-          if (onLoginSuccess) {
-            onLoginSuccess();
-          } else {
-            router.push('/');
-          }
-        } else {
-          // Invalid token, remove it
-          localStorage.removeItem('bearer_token');
-          localStorage.removeItem('user_data');
-        }
-      })
-      .catch(() => {
-        // Network error, assume token is invalid
-        localStorage.removeItem('bearer_token');
-        localStorage.removeItem('user_data');
-      });
-    }
-  }, [onLoginSuccess, router]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<LoginFormData> = {};
