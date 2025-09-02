@@ -66,7 +66,6 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
     if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
     if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.id_type) newErrors.id_type = 'ID type is required';
 
     // Phone validation (basic South African format)
@@ -74,7 +73,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
       newErrors.phone = 'Please enter a valid phone number';
     }
 
-    // Email validation
+    // Email validation - only validate format if email is provided
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
@@ -91,11 +90,6 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
     if (formData.id_type === 'passport') {
       if (!formData.passport_number.trim()) newErrors.passport_number = 'Passport number is required';
       if (!formData.passport_country) newErrors.passport_country = 'Passport country is required';
-    }
-
-    // File validation
-    if (!selectedFile) {
-      newErrors.file = 'ID/Passport image is required';
     }
 
     setErrors(newErrors);
@@ -296,7 +290,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
               <div><span className="font-medium">Patient ID:</span> {successData.patient_id}</div>
               <div><span className="font-medium">Name:</span> {successData.first_name} {successData.last_name}</div>
               <div><span className="font-medium">Phone:</span> {successData.phone}</div>
-              <div><span className="font-medium">Email:</span> {successData.email}</div>
+              <div><span className="font-medium">Email:</span> {successData.email || 'Not provided'}</div>
             </div>
           </div>
 
@@ -396,12 +390,13 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
                 </div>
 
                 <div>
-                  <Label htmlFor="email">Email Address *</Label>
+                  <Label htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Optional"
                     className={errors.email ? 'border-destructive' : ''}
                     aria-describedby={errors.email ? 'email-error' : undefined}
                   />
@@ -497,7 +492,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
 
                 {/* File Upload */}
                 <div>
-                  <Label htmlFor="id_image">ID/Passport Image *</Label>
+                  <Label htmlFor="id_image">ID/Passport Image</Label>
                   <div className="mt-1">
                     <input
                       ref={fileInputRef}
@@ -534,7 +529,7 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
                         <div className="space-y-2">
                           <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                           <div>
-                            <p className="text-sm font-medium">Click to upload ID/Passport image</p>
+                            <p className="text-sm font-medium">Click to upload ID/Passport image (Optional)</p>
                             <p className="text-xs text-muted-foreground">JPG, PNG, or PDF up to 10MB</p>
                           </div>
                         </div>
@@ -547,8 +542,6 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
                 </div>
               </div>
             </div>
-
-            <Separator />
 
             {/* Medical Aid Information */}
             <div>
