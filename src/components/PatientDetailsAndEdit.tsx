@@ -52,6 +52,7 @@ interface Patient {
   medicalAidNumber?: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  emergencyContactRelationship?: string;
   idImageUrl?: string;
   avatarUrl?: string;
   createdAt: string;
@@ -172,13 +173,37 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
     try {
       setIsSaving(true);
       
+      // Create changes object to track what fields were modified
       const changes = Object.keys(editForm).reduce((acc, key) => {
         const field = key as keyof Patient;
-        if (editForm[field] !== patient[field]) {
-          acc[field] = { from: patient[field], to: editForm[field] };
+        const newValue = editForm[field];
+        const oldValue = patient[field];
+        
+        if (newValue !== oldValue) {
+          acc[field] = { from: oldValue || null, to: newValue || null };
         }
         return acc;
       }, {} as Record<string, { from: any; to: any }>);
+
+      // Create the update payload
+      const updateData = {
+        patientId: parseInt(patient.id),
+        firstName: editForm.firstName || patient.firstName,
+        lastName: editForm.lastName || patient.lastName,
+        email: editForm.email || patient.email,
+        phone: editForm.phone || patient.phone,
+        dateOfBirth: editForm.dateOfBirth || patient.dateOfBirth,
+        gender: editForm.gender || patient.gender,
+        address: editForm.address || patient.address || null,
+        city: editForm.city || patient.city || null,
+        province: editForm.province || patient.province || null,
+        postalCode: editForm.postalCode || patient.postalCode || null,
+        emergencyContactName: editForm.emergencyContactName || patient.emergencyContactName || null,
+        emergencyContactPhone: editForm.emergencyContactPhone || patient.emergencyContactPhone || null,
+        emergencyContactRelationship: editForm.emergencyContactRelationship || patient.emergencyContactRelationship || null,
+        changes,
+        reason: changeReason,
+      };
 
       const token = localStorage.getItem("bearer_token");
       const response = await fetch('/api/webhook/clinic-portal/patient/update', {
@@ -187,12 +212,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          patientId: parseInt(patient.id),
-          ...editForm,
-          changes,
-          reason: changeReason,
-        }),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
@@ -501,7 +521,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
                 ) : (
                   <div className="p-3 bg-muted rounded-md flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {new Date(patient.dateOfBirth).toLocaleDateString()}
+                    {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'Not provided'}
                   </div>
                 )}
               </div>
@@ -523,7 +543,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
                     </SelectContent>
                   </Select>
                 ) : (
-                  <div className="p-3 bg-muted rounded-md capitalize">{patient.gender}</div>
+                  <div className="p-3 bg-muted rounded-md capitalize">{patient.gender || 'Not specified'}</div>
                 )}
               </div>
             </div>
@@ -543,9 +563,10 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
                       id="address"
                       value={editForm.address || ''}
                       onChange={(e) => handleInputChange('address', e.target.value)}
+                      placeholder="Enter street address (optional)"
                     />
                   ) : (
-                    <div className="p-3 bg-muted rounded-md">{patient.address}</div>
+                    <div className="p-3 bg-muted rounded-md">{patient.address || 'Not provided'}</div>
                   )}
                 </div>
 
@@ -557,9 +578,10 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
                         id="city"
                         value={editForm.city || ''}
                         onChange={(e) => handleInputChange('city', e.target.value)}
+                        placeholder="Enter city (optional)"
                       />
                     ) : (
-                      <div className="p-3 bg-muted rounded-md">{patient.city}</div>
+                      <div className="p-3 bg-muted rounded-md">{patient.city || 'Not provided'}</div>
                     )}
                   </div>
 
@@ -570,9 +592,10 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
                         id="province"
                         value={editForm.province || ''}
                         onChange={(e) => handleInputChange('province', e.target.value)}
+                        placeholder="Enter province (optional)"
                       />
                     ) : (
-                      <div className="p-3 bg-muted rounded-md">{patient.province}</div>
+                      <div className="p-3 bg-muted rounded-md">{patient.province || 'Not provided'}</div>
                     )}
                   </div>
 
@@ -583,11 +606,78 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
                         id="postalCode"
                         value={editForm.postalCode || ''}
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                        placeholder="Enter postal code (optional)"
                       />
                     ) : (
-                      <div className="p-3 bg-muted rounded-md">{patient.postalCode}</div>
+                      <div className="p-3 bg-muted rounded-md">{patient.postalCode || 'Not provided'}</div>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact Information */}
+            <div className="space-y-4">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Emergency Contact Information
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
+                  {isEditing ? (
+                    <Input
+                      id="emergencyContactName"
+                      value={editForm.emergencyContactName || ''}
+                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                      placeholder="Enter emergency contact name (optional)"
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md">{patient.emergencyContactName || 'Not provided'}</div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
+                  {isEditing ? (
+                    <Input
+                      id="emergencyContactPhone"
+                      value={editForm.emergencyContactPhone || ''}
+                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                      placeholder="Enter emergency contact phone (optional)"
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      {patient.emergencyContactPhone || 'Not provided'}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="emergencyContactRelationship">Relationship to Patient</Label>
+                  {isEditing ? (
+                    <Select
+                      value={editForm.emergencyContactRelationship || ''}
+                      onValueChange={(value) => handleInputChange('emergencyContactRelationship', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select relationship (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Not specified</SelectItem>
+                        <SelectItem value="spouse">Spouse</SelectItem>
+                        <SelectItem value="parent">Parent</SelectItem>
+                        <SelectItem value="child">Child</SelectItem>
+                        <SelectItem value="sibling">Sibling</SelectItem>
+                        <SelectItem value="friend">Friend</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md capitalize">{patient.emergencyContactRelationship || 'Not specified'}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -663,7 +753,7 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
             </CardContent>
           </Card>
 
-          {/* Emergency Contact */}
+          {/* Emergency Contact Summary */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -672,15 +762,32 @@ export default function PatientDetailsAndEdit({ patientId, onPatientUpdated }: P
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">Name</Label>
-                <p className="mt-1">{patient.emergencyContactName}</p>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium">Phone</Label>
-                <p className="font-mono text-sm mt-1">{patient.emergencyContactPhone}</p>
-              </div>
+              {patient.emergencyContactName || patient.emergencyContactPhone ? (
+                <>
+                  {patient.emergencyContactName && (
+                    <div>
+                      <Label className="text-sm font-medium">Name</Label>
+                      <p className="mt-1">{patient.emergencyContactName}</p>
+                    </div>
+                  )}
+                  
+                  {patient.emergencyContactPhone && (
+                    <div>
+                      <Label className="text-sm font-medium">Phone</Label>
+                      <p className="font-mono text-sm mt-1">{patient.emergencyContactPhone}</p>
+                    </div>
+                  )}
+
+                  {patient.emergencyContactRelationship && (
+                    <div>
+                      <Label className="text-sm font-medium">Relationship</Label>
+                      <p className="text-sm mt-1 capitalize">{patient.emergencyContactRelationship}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted-foreground text-sm">No emergency contact information</p>
+              )}
             </CardContent>
           </Card>
         </div>

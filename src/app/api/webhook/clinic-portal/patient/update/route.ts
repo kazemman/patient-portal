@@ -92,6 +92,17 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Validate emergency contact phone format if provided
+    if (changes.emergencyContactPhone !== undefined && changes.emergencyContactPhone) {
+      const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/;
+      if (!phoneRegex.test(changes.emergencyContactPhone)) {
+        return NextResponse.json({ 
+          error: "Invalid emergency contact phone format",
+          code: "INVALID_EMERGENCY_PHONE_FORMAT" 
+        }, { status: 400 });
+      }
+    }
+
     // Validate ID type matches provided ID fields
     if (changes.idType !== undefined) {
       if (changes.idType === 'sa_id' && changes.saIdNumber === undefined && !currentPatient.saIdNumber) {
@@ -205,6 +216,10 @@ export async function PUT(request: NextRequest) {
       passportCountry: 'passportCountry',
       medicalAid: 'medicalAid',
       medicalAidNumber: 'medicalAidNumber',
+      address: 'address',
+      emergencyContactName: 'emergencyContactName',
+      emergencyContactPhone: 'emergencyContactPhone',
+      emergencyContactRelationship: 'emergencyContactRelationship',
       active: 'active'
     };
 
@@ -218,17 +233,21 @@ export async function PUT(request: NextRequest) {
         if (changeKey === 'email' && newValue) {
           newValue = newValue.toLowerCase();
         }
-        if (changeKey === 'firstName' || changeKey === 'lastName') {
+        if (['firstName', 'lastName', 'address', 'emergencyContactName', 'emergencyContactRelationship'].includes(changeKey) && newValue) {
           newValue = newValue?.trim();
         }
 
-        // Convert values to strings for comparison
-        const oldValueStr = oldValue === null || oldValue === undefined ? '' : String(oldValue);
-        const newValueStr = newValue === null || newValue === undefined ? '' : String(newValue);
+        // Handle null/undefined values properly for comparison
+        const oldValueForComparison = oldValue === null || oldValue === undefined ? null : oldValue;
+        const newValueForComparison = newValue === null || newValue === undefined || newValue === '' ? null : newValue;
 
         // Only update and log if value actually changed
-        if (oldValueStr !== newValueStr) {
+        if (oldValueForComparison !== newValueForComparison) {
           updateData[dbKey] = newValue;
+          
+          // Convert to strings for audit log display
+          const oldValueStr = oldValueForComparison === null ? 'null' : String(oldValueForComparison);
+          const newValueStr = newValueForComparison === null ? 'null' : String(newValueForComparison);
           
           auditEntries.push({
             patientId: patientId,
@@ -286,6 +305,10 @@ export async function PUT(request: NextRequest) {
       medicalAidNumber: patient.medicalAidNumber,
       telegramUserId: patient.telegramUserId,
       idImageUrl: patient.idImageUrl,
+      address: patient.address,
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactPhone: patient.emergencyContactPhone,
+      emergencyContactRelationship: patient.emergencyContactRelationship,
       active: patient.active,
       createdAt: patient.createdAt,
       updatedAt: patient.updatedAt
