@@ -6,12 +6,35 @@ import { eq, and, or, ne } from 'drizzle-orm';
 export async function PUT(request: NextRequest) {
   try {
     const requestBody = await request.json();
-    const { patientId, changes, reason } = requestBody;
+    const { 
+      patientId, 
+      firstName, 
+      lastName, 
+      email, 
+      phone, 
+      dateOfBirth,
+      gender,
+      address, 
+      city,
+      province,
+      postalCode,
+      idType,
+      saIdNumber,
+      passportNumber,
+      passportCountry,
+      medicalAid,
+      medicalAidNumber,
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactRelationship,
+      changes, 
+      reason 
+    } = requestBody;
 
     // Validate required fields
-    if (!patientId || !changes || !reason) {
+    if (!patientId || !reason) {
       return NextResponse.json({ 
-        error: "Patient ID, changes, and reason are required",
+        error: "Patient ID and reason are required",
         code: "MISSING_REQUIRED_FIELDS" 
       }, { status: 400 });
     }
@@ -21,14 +44,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ 
         error: "Valid patient ID is required",
         code: "INVALID_PATIENT_ID" 
-      }, { status: 400 });
-    }
-
-    // Validate changes object has at least one field
-    if (!changes || typeof changes !== 'object' || Object.keys(changes).length === 0) {
-      return NextResponse.json({ 
-        error: "Changes object with at least one field is required",
-        code: "EMPTY_CHANGES" 
       }, { status: 400 });
     }
 
@@ -56,14 +71,14 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate required fields if provided
-    if (changes.firstName !== undefined && (!changes.firstName || changes.firstName.trim().length === 0)) {
+    if (firstName !== undefined && (!firstName || firstName.trim().length === 0)) {
       return NextResponse.json({ 
         error: "First name is required",
         code: "INVALID_FIRST_NAME" 
       }, { status: 400 });
     }
 
-    if (changes.lastName !== undefined && (!changes.lastName || changes.lastName.trim().length === 0)) {
+    if (lastName !== undefined && (!lastName || lastName.trim().length === 0)) {
       return NextResponse.json({ 
         error: "Last name is required",
         code: "INVALID_LAST_NAME" 
@@ -71,9 +86,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate email format if provided
-    if (changes.email !== undefined && changes.email) {
+    if (email !== undefined && email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(changes.email)) {
+      if (!emailRegex.test(email)) {
         return NextResponse.json({ 
           error: "Invalid email format",
           code: "INVALID_EMAIL_FORMAT" 
@@ -82,9 +97,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate phone format if provided
-    if (changes.phone !== undefined && changes.phone) {
+    if (phone !== undefined && phone) {
       const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/;
-      if (!phoneRegex.test(changes.phone)) {
+      if (!phoneRegex.test(phone)) {
         return NextResponse.json({ 
           error: "Invalid phone format",
           code: "INVALID_PHONE_FORMAT" 
@@ -93,9 +108,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate emergency contact phone format if provided
-    if (changes.emergencyContactPhone !== undefined && changes.emergencyContactPhone) {
+    if (emergencyContactPhone !== undefined && emergencyContactPhone) {
       const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/;
-      if (!phoneRegex.test(changes.emergencyContactPhone)) {
+      if (!phoneRegex.test(emergencyContactPhone)) {
         return NextResponse.json({ 
           error: "Invalid emergency contact phone format",
           code: "INVALID_EMERGENCY_PHONE_FORMAT" 
@@ -104,14 +119,14 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate ID type matches provided ID fields
-    if (changes.idType !== undefined) {
-      if (changes.idType === 'sa_id' && changes.saIdNumber === undefined && !currentPatient.saIdNumber) {
+    if (idType !== undefined) {
+      if (idType === 'sa_id' && saIdNumber === undefined && !currentPatient.saIdNumber) {
         return NextResponse.json({ 
           error: "SA ID number is required when ID type is 'sa_id'",
           code: "MISSING_SA_ID_NUMBER" 
         }, { status: 400 });
       }
-      if (changes.idType === 'passport' && changes.passportNumber === undefined && !currentPatient.passportNumber) {
+      if (idType === 'passport' && passportNumber === undefined && !currentPatient.passportNumber) {
         return NextResponse.json({ 
           error: "Passport number is required when ID type is 'passport'",
           code: "MISSING_PASSPORT_NUMBER" 
@@ -120,11 +135,11 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check for duplicate email
-    if (changes.email !== undefined && changes.email && changes.email !== currentPatient.email) {
+    if (email !== undefined && email && email !== currentPatient.email) {
       const duplicateEmail = await db.select()
         .from(patients)
         .where(and(
-          eq(patients.email, changes.email.toLowerCase()),
+          eq(patients.email, email.toLowerCase()),
           ne(patients.id, patientId),
           eq(patients.active, true)
         ))
@@ -139,11 +154,11 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check for duplicate phone
-    if (changes.phone !== undefined && changes.phone && changes.phone !== currentPatient.phone) {
+    if (phone !== undefined && phone && phone !== currentPatient.phone) {
       const duplicatePhone = await db.select()
         .from(patients)
         .where(and(
-          eq(patients.phone, changes.phone),
+          eq(patients.phone, phone),
           ne(patients.id, patientId),
           eq(patients.active, true)
         ))
@@ -158,11 +173,11 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check for duplicate SA ID number
-    if (changes.saIdNumber !== undefined && changes.saIdNumber && changes.saIdNumber !== currentPatient.saIdNumber) {
+    if (saIdNumber !== undefined && saIdNumber && saIdNumber !== currentPatient.saIdNumber) {
       const duplicateIdNumber = await db.select()
         .from(patients)
         .where(and(
-          eq(patients.saIdNumber, changes.saIdNumber),
+          eq(patients.saIdNumber, saIdNumber),
           ne(patients.id, patientId),
           eq(patients.active, true)
         ))
@@ -177,11 +192,11 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check for duplicate passport number
-    if (changes.passportNumber !== undefined && changes.passportNumber && changes.passportNumber !== currentPatient.passportNumber) {
+    if (passportNumber !== undefined && passportNumber && passportNumber !== currentPatient.passportNumber) {
       const duplicatePassport = await db.select()
         .from(patients)
         .where(and(
-          eq(patients.passportNumber, changes.passportNumber),
+          eq(patients.passportNumber, passportNumber),
           ne(patients.id, patientId),
           eq(patients.active, true)
         ))
@@ -195,7 +210,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Prepare update data
+    // Prepare update data - only update provided fields
     const updateData: any = {
       updatedAt: new Date().toISOString()
     };
@@ -204,54 +219,41 @@ export async function PUT(request: NextRequest) {
     const auditEntries: any[] = [];
     const timestamp = new Date().toISOString();
 
-    // Map of fields to check for changes
-    const fieldMap = {
-      firstName: 'firstName',
-      lastName: 'lastName',
-      email: 'email',
-      phone: 'phone',
-      idType: 'idType',
-      saIdNumber: 'saIdNumber',
-      passportNumber: 'passportNumber',
-      passportCountry: 'passportCountry',
-      medicalAid: 'medicalAid',
-      medicalAidNumber: 'medicalAidNumber',
-      address: 'address',
-      emergencyContactName: 'emergencyContactName',
-      emergencyContactPhone: 'emergencyContactPhone',
-      emergencyContactRelationship: 'emergencyContactRelationship',
-      active: 'active'
-    };
-
-    // Check each field for changes and prepare audit entries
-    Object.entries(fieldMap).forEach(([changeKey, dbKey]) => {
-      if (changes[changeKey] !== undefined) {
-        let newValue = changes[changeKey];
-        let oldValue = currentPatient[dbKey as keyof typeof currentPatient];
-
+    // Helper function to add field to update if changed
+    const addFieldUpdate = (fieldName: string, newValue: any, dbFieldName?: string) => {
+      if (newValue !== undefined) {
+        const dbField = dbFieldName || fieldName;
+        const currentValue = currentPatient[dbField as keyof typeof currentPatient];
+        
         // Normalize values for comparison
-        if (changeKey === 'email' && newValue) {
-          newValue = newValue.toLowerCase();
+        let normalizedNewValue = newValue;
+        let normalizedCurrentValue = currentValue;
+        
+        if (typeof newValue === 'string') {
+          normalizedNewValue = newValue.trim();
         }
-        if (['firstName', 'lastName', 'address', 'emergencyContactName', 'emergencyContactRelationship'].includes(changeKey) && newValue) {
-          newValue = newValue?.trim();
+        if (typeof currentValue === 'string') {
+          normalizedCurrentValue = currentValue.trim();
         }
-
-        // Handle null/undefined values properly for comparison
-        const oldValueForComparison = oldValue === null || oldValue === undefined ? null : oldValue;
-        const newValueForComparison = newValue === null || newValue === undefined || newValue === '' ? null : newValue;
-
-        // Only update and log if value actually changed
-        if (oldValueForComparison !== newValueForComparison) {
-          updateData[dbKey] = newValue;
+        if (fieldName === 'email' && normalizedNewValue) {
+          normalizedNewValue = normalizedNewValue.toLowerCase();
+        }
+        
+        // Handle null/undefined values
+        const currentForComparison = normalizedCurrentValue === null || normalizedCurrentValue === undefined ? null : normalizedCurrentValue;
+        const newForComparison = normalizedNewValue === null || normalizedNewValue === undefined || normalizedNewValue === '' ? null : normalizedNewValue;
+        
+        // Only update if value actually changed
+        if (currentForComparison !== newForComparison) {
+          updateData[dbField] = normalizedNewValue === '' ? null : normalizedNewValue;
           
-          // Convert to strings for audit log display
-          const oldValueStr = oldValueForComparison === null ? 'null' : String(oldValueForComparison);
-          const newValueStr = newValueForComparison === null ? 'null' : String(newValueForComparison);
+          // Create audit entry
+          const oldValueStr = currentForComparison === null ? 'null' : String(currentForComparison);
+          const newValueStr = newForComparison === null ? 'null' : String(newForComparison);
           
           auditEntries.push({
             patientId: patientId,
-            fieldChanged: changeKey,
+            fieldChanged: fieldName,
             oldValue: oldValueStr,
             newValue: newValueStr,
             changedBy: 'API Update',
@@ -261,7 +263,50 @@ export async function PUT(request: NextRequest) {
           });
         }
       }
-    });
+    };
+
+    // Update all possible fields
+    addFieldUpdate('firstName', firstName);
+    addFieldUpdate('lastName', lastName);
+    addFieldUpdate('email', email);
+    addFieldUpdate('phone', phone);
+    addFieldUpdate('idType', idType);
+    addFieldUpdate('saIdNumber', saIdNumber);
+    addFieldUpdate('passportNumber', passportNumber);
+    addFieldUpdate('passportCountry', passportCountry);
+    addFieldUpdate('medicalAid', medicalAid);
+    addFieldUpdate('medicalAidNumber', medicalAidNumber);
+    addFieldUpdate('address', address);
+    addFieldUpdate('emergencyContactName', emergencyContactName);
+    addFieldUpdate('emergencyContactPhone', emergencyContactPhone);
+    addFieldUpdate('emergencyContactRelationship', emergencyContactRelationship);
+
+    // Handle changes object if provided (for tracking changes from frontend)
+    if (changes && typeof changes === 'object') {
+      Object.entries(changes).forEach(([fieldName, changeObj]) => {
+        if (changeObj && typeof changeObj === 'object' && 'from' in changeObj && 'to' in changeObj) {
+          const { from, to } = changeObj as { from: any; to: any };
+          
+          // Only add to audit if not already tracked above
+          const alreadyTracked = auditEntries.some(entry => entry.fieldChanged === fieldName);
+          if (!alreadyTracked) {
+            const fromStr = from === null || from === undefined ? 'null' : String(from);
+            const toStr = to === null || to === undefined ? 'null' : String(to);
+            
+            auditEntries.push({
+              patientId: patientId,
+              fieldChanged: fieldName,
+              oldValue: fromStr,
+              newValue: toStr,
+              changedBy: 'API Update',
+              reason: reason,
+              createdAt: timestamp,
+              updatedAt: timestamp
+            });
+          }
+        }
+      });
+    }
 
     // If no actual changes detected
     if (Object.keys(updateData).length === 1) { // Only updatedAt
@@ -289,7 +334,7 @@ export async function PUT(request: NextRequest) {
       await db.insert(patientAuditLog).values(auditEntries);
     }
 
-    // Format response to match GET endpoint structure
+    // Format response to match expected structure
     const patient = updatedPatient[0];
     const response = {
       id: patient.id,
