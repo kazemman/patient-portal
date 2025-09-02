@@ -197,12 +197,23 @@ export default function RegisterPatientForm({ onNavigateToDetails, onRegisterAno
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+      const result = await response.json();
+
+      // Handle specific status codes
+      if (response.status === 409) {
+        // Duplicate patient found - show modal
+        if (result.duplicates && result.duplicates.length > 0) {
+          setDuplicateModal({ show: true, matches: result.duplicates });
+          setIsSubmitting(false);
+          setUploadProgress(0);
+          return;
+        }
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || result.error || 'Registration failed');
+      }
+
       setSuccessData(result.patient);
       toast.success('Patient registered successfully!');
 
