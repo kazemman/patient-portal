@@ -5,26 +5,26 @@ import { eq, and, gte, lte, desc, count } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
-    // Date calculations
+    // Fix timezone issues by using UTC dates consistently
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayStartISO = todayUTC.toISOString();
+    const todayEndUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    const todayEndISO = todayEndUTC.toISOString();
     
-    const tomorrowStart = new Date(todayEnd.getTime() + 1);
-    const next7Days = new Date(tomorrowStart.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const tomorrowUTC = new Date(todayEndUTC.getTime() + 1);
+    const tomorrowStartISO = tomorrowUTC.toISOString();
+    const next7DaysUTC = new Date(tomorrowUTC.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const next7DaysISO = next7DaysUTC.toISOString();
     
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-
-    // Convert to ISO strings for database queries
-    const todayStartISO = todayStart.toISOString();
-    const todayEndISO = todayEnd.toISOString();
-    const tomorrowStartISO = tomorrowStart.toISOString();
-    const next7DaysISO = next7Days.toISOString();
+    const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const thisMonthStartISO = thisMonthStart.toISOString();
+    const lastMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
     const lastMonthStartISO = lastMonthStart.toISOString();
+    const lastMonthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999));
     const lastMonthEndISO = lastMonthEnd.toISOString();
+
+    console.log('Date range for today:', { todayStartISO, todayEndISO });
 
     // 1. Total active patients
     const totalPatientsResult = await db.select({ count: count() })
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       .where(eq(patients.active, true));
     const totalPatients = totalPatientsResult[0]?.count || 0;
 
-    // 2. Today's appointments
+    // 2. Today's appointments - fix date comparison to use date portion only
     const todayAppointmentsResult = await db.select({ count: count() })
       .from(appointments)
       .where(and(
@@ -60,6 +60,14 @@ export async function GET(request: NextRequest) {
         eq(appointments.status, 'completed')
       ));
     const completedToday = completedTodayResult[0]?.count || 0;
+
+    // Debug logging
+    console.log('Dashboard stats:', { 
+      todayAppointments, 
+      waitingPatients, 
+      completedToday,
+      dateRange: { todayStartISO, todayEndISO }
+    });
 
     // 5. Recent activity (last 10 appointments with patient details)
     const recentActivityRaw = await db.select({
