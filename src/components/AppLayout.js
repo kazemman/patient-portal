@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { InvotechLogo } from '@/components/InvotechLogo';
 
 export default function AppLayout({ 
   children, 
@@ -294,21 +295,20 @@ export default function AppLayout({
         <div className="flex flex-col h-full">
           {/* Logo Section */}
           <div className="flex items-center p-4 border-b border-sidebar-border">
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                <Component className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div className={`
-                transition-opacity duration-300 min-w-0
-                ${(isMobile || !sidebarCollapsed) ? 'opacity-100' : 'opacity-0'}
-              `}>
-                <h1 className="font-heading font-bold text-sm text-sidebar-foreground truncate">
-                  InvoTech Health
-                </h1>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
-                  Care System
-                </p>
-              </div>
+            <div className="flex items-center min-w-0 w-full">
+              {(isMobile || !sidebarCollapsed) ? (
+                <InvotechLogo 
+                  size="medium" 
+                  showText={true}
+                  className="w-full"
+                />
+              ) : (
+                <InvotechLogo 
+                  size="small" 
+                  showText={false}
+                  className="mx-auto"
+                />
+              )}
             </div>
           </div>
 
