@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Heart, Calendar, FileText, Pill, Shield, User, CreditCard } from 'lucide-react'
+import { Heart, Calendar, FileText, Users, Shield, BarChart3, UserCheck } from 'lucide-react'
 import { authClient, useSession } from '@/lib/auth-client'
 
 export default function Home() {
@@ -37,27 +37,27 @@ export default function Home() {
 
   const features = [
     {
-      title: "Online Appointments",
-      description: "Schedule, reschedule, and manage your appointments with healthcare providers",
-      icon: Calendar,
+      title: "Patient Management",
+      description: "Comprehensive patient registration, records management, and tracking",
+      icon: Users,
       color: "text-blue-600"
     },
     {
-      title: "Medical Records",
-      description: "Access your complete medical history, test results, and treatment plans",
-      icon: FileText,
+      title: "Appointment Scheduling",
+      description: "Efficient appointment booking, scheduling, and calendar management",
+      icon: Calendar,
       color: "text-green-600"
     },
     {
-      title: "Prescription Management",
-      description: "View active prescriptions, request refills, and track medication history",
-      icon: Pill,
+      title: "Queue Management",
+      description: "Real-time patient queue tracking and workflow optimization",
+      icon: UserCheck,
       color: "text-purple-600"
     },
     {
-      title: "Secure Communication",
-      description: "Communicate securely with your healthcare team and get answers to your questions",
-      icon: Shield,
+      title: "Analytics & Reports",
+      description: "Detailed insights and reporting on clinic operations and performance",
+      icon: BarChart3,
       color: "text-orange-600"
     }
   ]
@@ -73,14 +73,14 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">InvoTech Health Care</h1>
-              <p className="text-sm text-gray-600">Patient Portal</p>
+              <p className="text-sm text-gray-600">Staff Portal</p>
             </div>
           </div>
           <Button 
             onClick={() => router.push('/login')}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            Sign In
+            Staff Sign In
           </Button>
         </div>
       </header>
@@ -89,11 +89,11 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 text-center">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Your Health, <span className="text-blue-600">At Your Fingertips</span>
+            Healthcare Management, <span className="text-blue-600">Simplified</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-            Access your medical information, manage appointments, and stay connected 
-            with your healthcare team through our secure patient portal.
+            Streamline your clinic operations with our comprehensive staff portal. 
+            Manage patients, schedule appointments, and optimize your healthcare workflow.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -101,7 +101,7 @@ export default function Home() {
               onClick={() => router.push('/login')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
             >
-              Access Patient Portal
+              Access Staff Portal
             </Button>
             <Button 
               size="lg"
@@ -118,10 +118,10 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h3 className="text-3xl font-bold text-gray-900 mb-4">
-            Everything You Need for Better Healthcare
+            Everything You Need for Efficient Healthcare Management
           </h3>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Our patient portal provides you with comprehensive tools to manage your healthcare journey.
+            Our staff portal provides comprehensive tools to manage your clinic operations effectively.
           </p>
         </div>
 
@@ -151,11 +151,11 @@ export default function Home() {
       <section className="bg-blue-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-3xl font-bold mb-4">
-            Ready to Take Control of Your Health?
+            Ready to Streamline Your Healthcare Operations?
           </h3>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            Join thousands of patients who are already using our secure portal 
-            to manage their healthcare more effectively.
+            Join healthcare professionals who are already using our comprehensive 
+            staff portal to manage their clinic operations more efficiently.
           </p>
           <Button 
             size="lg"
@@ -177,12 +177,12 @@ export default function Home() {
               </div>
               <div>
                 <p className="font-semibold">InvoTech Health Care</p>
-                <p className="text-sm text-gray-400">Your trusted healthcare partner</p>
+                <p className="text-sm text-gray-400">Your trusted healthcare management partner</p>
               </div>
             </div>
             <div className="text-center md:text-right">
               <p className="text-sm text-gray-400">© 2024 InvoTech Health Care. All rights reserved.</p>
-              <p className="text-sm text-gray-400">Secure • Private • Reliable</p>
+              <p className="text-sm text-gray-400">Secure • Efficient • Reliable</p>
             </div>
           </div>
         </div>
