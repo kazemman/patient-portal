@@ -53,7 +53,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <Card className="w-full max-w-md shadow-lg bg-white">
-        <CardHeader>
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/document-uploads/1756993698483-m835t4w714e.png" 
+              alt="InvoTech Logo" 
+              className="w-16 h-16 object-contain"
+            />
+          </div>
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
         </CardHeader>
         <CardContent>
