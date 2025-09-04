@@ -24,6 +24,46 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InvotechLogo } from '@/components/InvotechLogo';
 
+interface ClinicStats {
+  totalPatients: number;
+  todayAppointments: number;
+  waitingPatients: number;
+  completedToday: number;
+}
+
+interface User {
+  name: string;
+  role: 'admin' | 'staff' | 'doctor';
+  email?: string;
+}
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+  pageTitle: string;
+  onNavigate: (section: string) => void;
+  clinicStats?: ClinicStats;
+  user?: User;
+}
+
+interface NavigationItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  adminOnly?: boolean;
+}
+
+const navigationItems: NavigationItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'register', label: 'Register Patient', icon: UserPlus },
+  { id: 'search', label: 'Search Patients', icon: Search },
+  { id: 'appointments', label: 'Appointments', icon: Calendar },
+  { id: 'checkin', label: 'Patient Check-In', icon: LogIn },
+  { id: 'queue', label: 'Queue Management', icon: Users },
+  { id: 'analytics', label: 'Check-In Analytics', icon: BarChart3 },
+  { id: 'audit', label: 'Audit Logs', icon: FileText, adminOnly: true },
+  { id: 'users', label: 'User Management', icon: Settings, adminOnly: true },
+];
+
 export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   pageTitle,
@@ -31,245 +71,48 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   clinicStats,
   user
 }) => {
-  const router = useRouter();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Check for mobile screen size
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    if (typeof window !== "undefined") {
-      checkMobile();
-      window.addEventListener('resize', checkMobile);
-      return () => window.removeEventListener('resize', checkMobile);
-    }
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Load user data and verify authentication
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const token = localStorage.getItem('bearer_token');
-        const userData = localStorage.getItem('user_data');
-
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        // Parse stored user data for immediate UI update
-        if (userData) {
-          try {
-            const parsedUser = JSON.parse(userData);
-            setUser(parsedUser);
-          } catch (error) {
-            console.error('Failed to parse user data:', error);
-          }
-        }
-
-        // Verify token with server
-        const response = await fetch('/api/webhook/clinic-portal/auth/verify', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.valid && data.user) {
-            setUser(data.user);
-            localStorage.setItem('user_data', JSON.stringify(data.user));
-          } else {
-            throw new Error('Invalid authentication response');
-          }
-        } else {
-          throw new Error('Token verification failed');
-        }
-      } catch (error) {
-        console.error('Authentication error:', error);
-        localStorage.removeItem('bearer_token');
-        localStorage.removeItem('user_data');
-        router.push('/login?expired=true');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadUserData();
-  }, [router]);
-
-  // Define navigation items based on user role
-  const getNavItems = () => {
-    const baseItems = [
-      { 
-        id: 'dashboard', 
-        label: 'Dashboard', 
-        icon: LayoutDashboard,
-        href: '/dashboard',
-        roles: ['admin', 'staff']
-      },
-      { 
-        id: 'register', 
-        label: 'Register Patient', 
-        icon: Component,
-        href: '/register',
-        roles: ['admin', 'staff']
-      },
-      { 
-        id: 'search', 
-        label: 'Search Patients', 
-        icon: PanelsLeftBottom,
-        href: '/search',
-        roles: ['admin', 'staff']
-      },
-      { 
-        id: 'checkin', 
-        label: 'Patient Check-In', 
-        icon: UserPlus,
-        href: '/checkin',
-        roles: ['admin', 'staff']
-      },
-      { 
-        id: 'queue', 
-        label: 'Queue Management', 
-        icon: Users,
-        href: '/queue',
-        roles: ['admin', 'staff']
-      },
-      { 
-        id: 'appointments', 
-        label: 'Appointments', 
-        icon: LayoutTemplate,
-        href: '/appointments',
-        roles: ['admin', 'staff']
-      },
-      { 
-        id: 'checkin-stats', 
-        label: 'Check-In Analytics', 
-        icon: BarChart3,
-        href: '/checkin-stats',
-        roles: ['admin', 'staff']
-      }
-    ];
-
-    const adminItems = [
-      { 
-        id: 'audit', 
-        label: 'Audit Logs', 
-        icon: PanelLeftDashed,
-        href: '/audit',
-        roles: ['admin']
-      },
-      { 
-        id: 'users', 
-        label: 'User Management', 
-        icon: UserCog,
-        href: '/users',
-        roles: ['admin']
-      }
-    ];
-
-    // Filter items based on user role
-    const allItems = [...baseItems, ...adminItems];
-    return allItems.filter(item => 
-      user ? item.roles.includes(user.role) : false
-    );
+  const handleLogout = () => {
+    localStorage.removeItem('bearer_token');
+    localStorage.removeItem('user_data');
+    window.location.href = '/login';
   };
 
-  const navItems = getNavItems();
-  const filteredNavigationItems = navItems.filter(item => !item.adminOnly);
-
-  const handleNavigation = useCallback((item) => {
-    if (onNavigate) {
-      onNavigate(item.id, item.href);
-    }
-    if (isMobile) {
-      setMobileMenuOpen(false);
-    }
-  }, [onNavigate, isMobile]);
-
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('bearer_token');
-      
-      // Call logout endpoint
-      if (token) {
-        try {
-          await fetch('/api/webhook/clinic-portal/auth/logout', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-        } catch (error) {
-          console.warn('Logout API call failed:', error);
-        }
-      }
-
-      // Clear local storage
-      localStorage.removeItem('bearer_token');
-      localStorage.removeItem('user_data');
-      localStorage.removeItem('intended_destination');
-
-      // Show success message
-      toast.success('Logged out successfully');
-
-      // Redirect to login
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Logout failed, but local session cleared');
-      router.push('/login');
-    }
+  const handleNavigation = (itemId: string) => {
+    onNavigate(itemId);
+    setMobileMenuOpen(false);
   };
 
-  const toggleSidebar = useCallback(() => {
-    if (isMobile) {
-      setMobileMenuOpen(!mobileMenuOpen);
-    } else {
-      setSidebarCollapsed(!sidebarCollapsed);
-    }
-  }, [isMobile, mobileMenuOpen, sidebarCollapsed]);
+  const isAdminUser = user?.role === 'admin';
 
-  const handleSidebarMouseEnter = useCallback(() => {
-    if (!isMobile && sidebarCollapsed) {
-      setSidebarCollapsed(false);
-    }
-  }, [isMobile, sidebarCollapsed]);
+  const filteredNavigationItems = navigationItems.filter(item => 
+    !item.adminOnly || isAdminUser
+  );
 
-  const handleSidebarMouseLeave = useCallback(() => {
-    if (!isMobile) {
-      setSidebarCollapsed(true);
-    }
-  }, [isMobile]);
-
-  // Show loading state while verifying authentication
-  if (isLoading) {
-    return (
-      <div className="flex h-screen bg-background">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-sm text-muted-foreground">Loading...</p>
+  const StatCard: React.FC<{ title: string; value: number; icon: React.ComponentType<{ className?: string }> }> = 
+    ({ title, value, icon: Icon }) => (
+      <Card className="bg-white/80 backdrop-blur-sm border-blue-100 hover:bg-white/90 transition-all duration-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-2xl font-bold text-blue-700">{value}</p>
+            </div>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Icon className="h-5 w-5 text-blue-600" />
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
-  }
-
-  // Don't render if no user (will redirect to login)
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
