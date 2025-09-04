@@ -23,12 +23,12 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { InvotechLogo } from '@/components/InvotechLogo';
 
-export default function AppLayout({ 
+export const AppLayout = ({ 
   children, 
   pageTitle = "Dashboard",
   onNavigate,
   clinicStats = { todayPatients: 0, newRegistrations: 0 }
-}) {
+}) => {
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
