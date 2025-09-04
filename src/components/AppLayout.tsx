@@ -116,15 +116,15 @@ export const AppLayout = ({ clinicStats, children }: AppLayoutProps) => {
         <Sidebar>
           <SidebarHeader className="border-b border-sidebar-border">
             <div className="flex items-center gap-2 px-4 py-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Heart className="h-4 w-4 text-primary-foreground" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+                <Heart className="h-4 w-4 text-white" />
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-sidebar-foreground">
-                  HealthClinic Pro
+                  InvoTech
                 </span>
                 <span className="text-xs text-sidebar-foreground/70">
-                  Management Portal
+                  Health Care
                 </span>
               </div>
             </div>
@@ -151,7 +151,7 @@ export const AppLayout = ({ clinicStats, children }: AppLayoutProps) => {
 
           <SidebarFooter className="border-t border-sidebar-border p-4">
             <div className="text-xs text-sidebar-foreground/70">
-              © 2024 HealthClinic Pro
+              © 2024 InvoTech Health Care
             </div>
           </SidebarFooter>
         </Sidebar>
@@ -163,10 +163,10 @@ export const AppLayout = ({ clinicStats, children }: AppLayoutProps) => {
               <SidebarTrigger className="mr-2" />
               <div className="flex-1">
                 <h1 className="text-lg font-semibold text-foreground">
-                  Clinic Dashboard
+                  Staff Portal
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Real-time overview of your clinic operations
+                  InvoTech clinic management system
                 </p>
               </div>
             </div>
