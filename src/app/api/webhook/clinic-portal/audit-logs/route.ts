@@ -109,8 +109,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (fieldChanged) {
-      // Search in fieldsChanged JSON array
-      whereConditions.push(sql`json_extract(${auditLogs.fieldsChanged}, '$') LIKE '%"${fieldChanged}"%'`);
+      // Search in fieldsChanged JSON array - use proper parameter binding
+      whereConditions.push(sql`json_extract(${auditLogs.fieldsChanged}, '$') LIKE ${`%"${fieldChanged}"%`}`);
     }
 
     if (search) {
