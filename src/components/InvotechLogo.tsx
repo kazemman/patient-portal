@@ -12,44 +12,46 @@ export const InvotechLogo = ({
   showText = true, 
   className 
 }: InvotechLogoProps) => {
+  console.log('InvotechLogo rendering with:', { size, showText, className })
+  
   const sizeConfig = {
     small: {
       logoSize: 32,
-      mainTextSize: 'text-base',
-      subtitleSize: 'text-xs',
-      showTextOverride: false
+      mainTextSize: 'text-sm',
+      subtitleSize: 'text-xs'
     },
     medium: {
       logoSize: 40,
       mainTextSize: 'text-lg',
-      subtitleSize: 'text-xs',
-      showTextOverride: true
+      subtitleSize: 'text-sm'
     },
     large: {
       logoSize: 48,
       mainTextSize: 'text-2xl',
-      subtitleSize: 'text-sm',
-      showTextOverride: true
+      subtitleSize: 'text-base'
     }
   }
 
   const config = sizeConfig[size]
-  const shouldShowText = showText && config.showTextOverride
 
   return (
-    <div className={cn('flex items-center gap-3', className)}>
-      <div className="flex-shrink-0">
-        <Image
+    <div className={cn('flex items-center gap-3 bg-red-100 p-2', className)}>
+      {/* Debug text */}
+      <div className="text-xs text-red-600">LOGO HERE</div>
+      
+      {/* Logo Image - try both Next.js Image and regular img */}
+      <div className="flex-shrink-0 bg-blue-100 p-1">
+        <img
           src="/invotech-logo.png"
-          alt="Invotech logo"
+          alt="Invotech Logo"
           width={config.logoSize}
           height={config.logoSize}
           className="rounded-lg object-contain"
-          priority
         />
       </div>
       
-      {shouldShowText && (
+      {/* Text - Show for medium/large or when explicitly requested */}
+      {(showText && size !== 'small') && (
         <div className="flex flex-col min-w-0">
           <h1 className={cn(
             'font-heading font-semibold text-foreground leading-tight truncate',
