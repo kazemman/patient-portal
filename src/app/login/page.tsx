@@ -70,18 +70,18 @@ export default function LoginPage() {
         </div>
         
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Patient Portal</h2>
-          <p className="text-gray-600">Access your medical records, appointments, and healthcare information</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Staff Portal</h2>
+          <p className="text-gray-600">Sign in to access the clinic management system</p>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md shadow-lg">
+        <Card className="w-full max-w-md shadow-lg bg-white">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
             <CardDescription>
-              Sign in to access your patient portal
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -92,7 +92,7 @@ export default function LoginPage() {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="patient@example.com"
+                  placeholder="staff@invotech.health"
                   value={formData.email}
                   onChange={handleInputChange}
                   required
@@ -147,19 +147,19 @@ export default function LoginPage() {
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={isLoading}
               >
-                {isLoading ? "Signing In..." : "Sign In to Portal"}
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
 
             <div className="mt-6 text-center space-y-4">
               <p className="text-sm text-gray-600">
-                New patient?<br />
-                <span className="text-blue-600 hover:text-blue-700 cursor-pointer">Contact us to create your account</span>
+                Need access to the system?<br />
+                <span className="text-blue-600 hover:text-blue-700 cursor-pointer">Contact your system administrator</span>
               </p>
               
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <Shield className="w-4 h-4" />
-                <span>Secure patient portal access</span>
+                <span>Secure clinic staff authentication</span>
               </div>
             </div>
           </CardContent>
@@ -169,7 +169,7 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="text-center py-6 text-sm text-gray-600">
         <p>© 2024 InvoTech Health Care. All rights reserved.</p>
-        <p>Your trusted healthcare partner</p>
+        <p>Professional clinic management system</p>
       </footer>
     </div>
   );
