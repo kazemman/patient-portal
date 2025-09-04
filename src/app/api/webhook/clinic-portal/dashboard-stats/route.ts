@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { patients, appointments } from '@/db/schema';
+import { patients, appointments, checkins } from '@/db/schema';
 import { eq, and, gte, lte, count } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
       totalPatientsResult,
       todayAppointmentsResult,
       waitingPatientsResult,
-      completedTodayResult
+      completedAppointmentsResult,
+      attendedCheckinsResult
     ] = await Promise.all([
       // Count all active patients
       db.select({ count: count() })
@@ -56,13 +57,28 @@ export async function GET(request: NextRequest) {
             eq(appointments.status, 'completed')
           )
         ),
+
+      // Count attended check-ins for today
+      db.select({ count: count() })
+        .from(checkins)
+        .where(
+          and(
+            gte(checkins.checkinTime, todayStartISO),
+            lte(checkins.checkinTime, todayEndISO),
+            eq(checkins.status, 'attended')
+          )
+        ),
     ]);
 
     // Extract counts from results
     const totalPatients = totalPatientsResult[0]?.count || 0;
     const todayAppointments = todayAppointmentsResult[0]?.count || 0;
     const waitingPatients = waitingPatientsResult[0]?.count || 0;
-    const completedToday = completedTodayResult[0]?.count || 0;
+    const completedAppointments = completedAppointmentsResult[0]?.count || 0;
+    const attendedCheckins = attendedCheckinsResult[0]?.count || 0;
+    
+    // Total completed today = completed appointments + attended check-ins
+    const completedToday = completedAppointments + attendedCheckins;
 
     // Return dashboard statistics
     return NextResponse.json({
