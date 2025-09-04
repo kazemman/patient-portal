@@ -1,0 +1,48 @@
+I cannot save images or files to your local directory since I'm an AI language model. However, I can help you understand how to save the logo image and use it in your React components.
+
+To save the Invotech logo image:
+
+1. **Save the image manually:**
+   - Right-click on the logo image you provided
+   - Select "Save image as..."
+   - Save it as `invotech-logo.png` in your `public/` directory
+
+2. **Use the logo in your React components:**
+
+Here's how you would reference the logo in a React component:
+
+import Image from 'next/image'
+
+export const Logo = ({ className = "", width = 120, height = 40 }) => {
+  return (
+    <Image
+      src="/invotech-logo.png"
+      alt="Invotech - Peak Innovation"
+      width={width}
+      height={height}
+      className={className}
+      priority
+    />
+  )
+}
+Or if you prefer a simple img tag:
+
+export const Logo = ({ className = "", width = 120, height = 40 }) => {
+  return (
+    <img
+      src="/invotech-logo.png"
+      alt="Invotech - Peak Innovation"
+      width={width}
+      height={height}
+      className={className}
+    />
+  )
+}
+**File structure should be:**
+your-project/
+├── public/
+│   └── invotech-logo.png  (place your logo here)
+├── src/
+│   └── components/
+└── ...
+Once you manually save the logo image to the `public/` directory, you can reference it using `/invotech-logo.png` in your React components as shown above.
