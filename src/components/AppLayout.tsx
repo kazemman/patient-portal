@@ -131,19 +131,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
-          {/* Logo and Header */}
+          {/* Header - Logo completely removed */}
           <div className="flex items-center justify-between p-4 border-b border-blue-100">
-            {!sidebarCollapsed && (
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-blue-600 rounded-lg">
-                  <Heart className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="font-heading font-bold text-blue-900">InvoTech</h1>
-                  <p className="text-xs text-blue-600">Health Care</p>
-                </div>
-              </div>
-            )}
+            <div className="flex-1">
+              {/* Logo space reserved for user to add their own logo */}
+            </div>
             <Button
               variant="ghost"
               size="sm"
