@@ -68,9 +68,11 @@ export default function Home() {
       <header className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white fill-white" />
-            </div>
+            <img 
+              src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/document-uploads/1756993698483-m835t4w714e.png" 
+              alt="InvoTech Logo" 
+              className="w-10 h-10 object-contain"
+            />
             <div>
               <h1 className="text-xl font-bold text-gray-900">InvoTech Health Care</h1>
               <p className="text-sm text-gray-600">Staff Portal</p>
@@ -172,9 +174,11 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Heart className="w-4 h-4 text-white fill-white" />
-              </div>
+              <img 
+                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/document-uploads/1756993698483-m835t4w714e.png" 
+                alt="InvoTech Logo" 
+                className="w-8 h-8 object-contain"
+              />
               <div>
                 <p className="font-semibold">InvoTech Health Care</p>
                 <p className="text-sm text-gray-400">Your trusted healthcare management partner</p>
