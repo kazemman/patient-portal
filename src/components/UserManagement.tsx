@@ -101,7 +101,7 @@ export const UserManagement = () => {
 
   // API helper function
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('bearer_token');
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
