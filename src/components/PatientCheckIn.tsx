@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Search, User, CreditCard, Clock, CheckCircle, AlertCircle, Phone, Mail, IdCard, Shield, Calendar, Users, DollarSign } from 'lucide-react';
+import { Search, User, CreditCard, Clock, CheckCircle, AlertCircle, Phone, Mail, IdCard, Shield, Calendar, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -764,13 +764,13 @@ export const PatientCheckin = () => {
                       Amount (South African Rands) <span className="text-destructive">*</span>
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm font-medium text-muted-foreground">R</span>
                       <Input
                         type="number"
                         placeholder="0.00"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="pl-10"
+                        className="pl-8"
                         min="0"
                         max="999999.99"
                         step="0.01"
