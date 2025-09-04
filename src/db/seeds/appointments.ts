@@ -2,223 +2,129 @@ import { db } from '@/db';
 import { appointments } from '@/db/schema';
 
 async function main() {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-
-    const appointmentNotes = [
-        'Regular checkup',
-        'Follow-up visit',
-        'Blood pressure monitoring',
-        'Vaccination',
-        'Consultation',
-        'Physical examination',
-        'Lab results review',
-        'Medication adjustment',
-        'Preventive care visit',
-        'Symptom evaluation',
-        'Chronic condition management',
-        'Wellness check',
-        'Treatment follow-up',
-        'Health screening',
-        'Annual physical'
+    const doctors = [
+        'Dr. Sarah Johnson',
+        'Dr. Michael Chen',
+        'Dr. Emily Rodriguez',
+        'Dr. David Thompson',
+        'Dr. Lisa Park',
+        'Dr. James Wilson',
+        'Dr. Maria Garcia',
+        'Dr. Robert Kim'
     ];
 
-    const clinicTimes = [
+    const appointmentTypes = [
+        'Annual Physical',
+        'Follow-up Visit',
+        'Blood Work',
+        'Vaccination',
+        'Consultation',
+        'Specialist Referral',
+        'Preventive Care',
+        'Symptom Evaluation'
+    ];
+
+    const businessHours = [
         '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
         '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
         '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
         '17:00', '17:30'
     ];
 
-    const sampleAppointments = [
-        // Today's appointments - 8 total (3 completed, 2 scheduled, 3 cancelled)
-        {
-            patientId: 1,
-            appointmentDate: `${today.toISOString().split('T')[0]}T08:00:00.000Z`,
-            status: 'completed',
-            notes: 'Regular checkup',
-            createdAt: new Date('2024-01-10').toISOString(),
+    const reasonsAndNotes = {
+        'Annual Physical': {
+            reason: 'Annual physical examination and health screening',
+            notes: 'Complete physical exam including vital signs, blood pressure check, and general health assessment'
         },
-        {
-            patientId: 3,
-            appointmentDate: `${today.toISOString().split('T')[0]}T09:30:00.000Z`,
-            status: 'completed',
-            notes: 'Blood pressure monitoring',
-            createdAt: new Date('2024-01-11').toISOString(),
+        'Follow-up Visit': {
+            reason: 'Follow-up appointment to review treatment progress',
+            notes: 'Patient showing good improvement. Continue current treatment plan and monitor symptoms'
         },
-        {
-            patientId: 5,
-            appointmentDate: `${today.toISOString().split('T')[0]}T11:00:00.000Z`,
-            status: 'completed',
-            notes: 'Follow-up visit',
-            createdAt: new Date('2024-01-12').toISOString(),
+        'Blood Work': {
+            reason: 'Laboratory blood work and testing',
+            notes: 'Routine blood panel including CBC, lipid profile, and glucose levels'
         },
-        {
-            patientId: 7,
-            appointmentDate: `${today.toISOString().split('T')[0]}T13:00:00.000Z`,
-            status: 'scheduled',
-            notes: 'Vaccination',
-            createdAt: new Date('2024-01-13').toISOString(),
+        'Vaccination': {
+            reason: 'Scheduled vaccination appointment',
+            notes: 'Annual flu shot administered. Patient advised about potential mild side effects'
         },
-        {
-            patientId: 9,
-            appointmentDate: `${today.toISOString().split('T')[0]}T14:30:00.000Z`,
-            status: 'scheduled',
-            notes: 'Consultation',
-            createdAt: new Date('2024-01-14').toISOString(),
+        'Consultation': {
+            reason: 'Medical consultation for health concerns',
+            notes: 'Discussed symptoms and medical history. Recommended further evaluation if symptoms persist'
         },
-        {
-            patientId: 11,
-            appointmentDate: `${today.toISOString().split('T')[0]}T10:00:00.000Z`,
-            status: 'cancelled',
-            notes: 'Physical examination',
-            createdAt: new Date('2024-01-15').toISOString(),
+        'Specialist Referral': {
+            reason: 'Referral to specialist for specialized care',
+            notes: 'Patient referred to cardiology for further evaluation of irregular heartbeat'
         },
-        {
-            patientId: 13,
-            appointmentDate: `${today.toISOString().split('T')[0]}T15:30:00.000Z`,
-            status: 'cancelled',
-            notes: 'Lab results review',
-            createdAt: new Date('2024-01-16').toISOString(),
+        'Preventive Care': {
+            reason: 'Preventive care and health maintenance',
+            notes: 'Discussed lifestyle modifications, diet, and exercise recommendations'
         },
-        {
-            patientId: 15,
-            appointmentDate: `${today.toISOString().split('T')[0]}T17:00:00.000Z`,
-            status: 'cancelled',
-            notes: 'Medication adjustment',
-            createdAt: new Date('2024-01-17').toISOString(),
-        },
-
-        // Yesterday's appointments - 5 total (all completed)
-        {
-            patientId: 2,
-            appointmentDate: `${yesterday.toISOString().split('T')[0]}T09:00:00.000Z`,
-            status: 'completed',
-            notes: 'Annual physical',
-            createdAt: new Date('2024-01-08').toISOString(),
-        },
-        {
-            patientId: 4,
-            appointmentDate: `${yesterday.toISOString().split('T')[0]}T11:30:00.000Z`,
-            status: 'completed',
-            notes: 'Chronic condition management',
-            createdAt: new Date('2024-01-09').toISOString(),
-        },
-        {
-            patientId: 6,
-            appointmentDate: `${yesterday.toISOString().split('T')[0]}T14:00:00.000Z`,
-            status: 'completed',
-            notes: 'Symptom evaluation',
-            createdAt: new Date('2024-01-10').toISOString(),
-        },
-        {
-            patientId: 8,
-            appointmentDate: `${yesterday.toISOString().split('T')[0]}T15:30:00.000Z`,
-            status: 'completed',
-            notes: 'Wellness check',
-            createdAt: new Date('2024-01-11').toISOString(),
-        },
-        {
-            patientId: 10,
-            appointmentDate: `${yesterday.toISOString().split('T')[0]}T16:30:00.000Z`,
-            status: 'completed',
-            notes: 'Treatment follow-up',
-            createdAt: new Date('2024-01-12').toISOString(),
-        },
-
-        // Tomorrow's appointments - 7 total (all scheduled)
-        {
-            patientId: 1,
-            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T08:30:00.000Z`,
-            status: 'scheduled',
-            notes: 'Health screening',
-            createdAt: new Date('2024-01-18').toISOString(),
-        },
-        {
-            patientId: 12,
-            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T10:30:00.000Z`,
-            status: 'scheduled',
-            notes: 'Regular checkup',
-            createdAt: new Date('2024-01-19').toISOString(),
-        },
-        {
-            patientId: 14,
-            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T12:00:00.000Z`,
-            status: 'scheduled',
-            notes: 'Preventive care visit',
-            createdAt: new Date('2024-01-20').toISOString(),
-        },
-        {
-            patientId: 3,
-            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T13:30:00.000Z`,
-            status: 'scheduled',
-            notes: 'Follow-up visit',
-            createdAt: new Date('2024-01-21').toISOString(),
-        },
-        {
-            patientId: 5,
-            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T15:00:00.000Z`,
-            status: 'scheduled',
-            notes: 'Blood pressure monitoring',
-            createdAt: new Date('2024-01-22').toISOString(),
-        },
-        {
-            patientId: 7,
-            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T16:00:00.000Z`,
-            status: 'scheduled',
-            notes: 'Consultation',
-            createdAt: new Date('2024-01-23').toISOString(),
-        },
-        {
-            patientId: 9,
-            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T17:30:00.000Z`,
-            status: 'scheduled',
-            notes: 'Vaccination',
-            createdAt: new Date('2024-01-24').toISOString(),
-        },
-
-        // Next week's appointments - 5 total (all scheduled)
-        {
-            patientId: 11,
-            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T09:00:00.000Z`,
-            status: 'scheduled',
-            notes: 'Physical examination',
-            createdAt: new Date('2024-01-25').toISOString(),
-        },
-        {
-            patientId: 13,
-            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T11:00:00.000Z`,
-            status: 'scheduled',
-            notes: 'Lab results review',
-            createdAt: new Date('2024-01-26').toISOString(),
-        },
-        {
-            patientId: 15,
-            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T14:00:00.000Z`,
-            status: 'scheduled',
-            notes: 'Medication adjustment',
-            createdAt: new Date('2024-01-27').toISOString(),
-        },
-        {
-            patientId: 2,
-            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T15:30:00.000Z`,
-            status: 'scheduled',
-            notes: 'Chronic condition management',
-            createdAt: new Date('2024-01-28').toISOString(),
-        },
-        {
-            patientId: 4,
-            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T16:30:00.000Z`,
-            status: 'scheduled',
-            notes: 'Wellness check',
-            createdAt: new Date('2024-01-29').toISOString(),
+        'Symptom Evaluation': {
+            reason: 'Evaluation of reported symptoms',
+            notes: 'Patient reported mild chest discomfort. EKG normal, advised to monitor and return if worsens'
         }
-    ];
+    };
+
+    const getRandomDate = (startDate: Date, endDate: Date) => {
+        const start = startDate.getTime();
+        const end = endDate.getTime();
+        const randomTime = start + Math.random() * (end - start);
+        return new Date(randomTime);
+    };
+
+    const getRandomElement = (array: any[]) => {
+        return array[Math.floor(Math.random() * array.length)];
+    };
+
+    const today = new Date();
+    const twoMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    const twoMonthsFromNow = new Date(today.getFullYear(), today.getMonth() + 2, 28);
+
+    const sampleAppointments = [];
+
+    // Generate 35 appointments for 8 patients (patientId 1-8)
+    for (let i = 0; i < 35; i++) {
+        const patientId = (i % 8) + 1; // Cycle through patients 1-8
+        const appointmentType = getRandomElement(appointmentTypes);
+        const doctor = getRandomElement(doctors);
+        const time = getRandomElement(businessHours);
+        
+        let status: string;
+        let appointmentDate: Date;
+        
+        // Determine status and date based on distribution
+        const statusRand = Math.random();
+        if (statusRand < 0.60) {
+            // 60% completed (past appointments)
+            status = 'completed';
+            appointmentDate = getRandomDate(twoMonthsAgo, today);
+        } else if (statusRand < 0.85) {
+            // 25% scheduled (future appointments)
+            status = 'scheduled';
+            appointmentDate = getRandomDate(new Date(today.getTime() + 24 * 60 * 60 * 1000), twoMonthsFromNow);
+        } else {
+            // 15% cancelled
+            status = 'cancelled';
+            appointmentDate = getRandomDate(twoMonthsAgo, twoMonthsFromNow);
+        }
+
+        const reasonData = reasonsAndNotes[appointmentType as keyof typeof reasonsAndNotes];
+        
+        sampleAppointments.push({
+            patientId,
+            doctorName: doctor,
+            appointmentDate: appointmentDate.toISOString().split('T')[0],
+            appointmentTime: time,
+            status,
+            reason: reasonData.reason,
+            notes: status === 'cancelled' ? 'Appointment cancelled by patient' : reasonData.notes,
+            createdAt: new Date(appointmentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+    }
+
+    // Sort appointments by date to make data more realistic
+    sampleAppointments.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
 
     await db.insert(appointments).values(sampleAppointments);
     

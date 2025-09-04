@@ -1,244 +1,402 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { AppLayout } from "@/components/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, FileText, Pill, CreditCard, User, CalendarDays, Activity } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from 'react';
+import { AppLayout } from '@/components/AppLayout';
+import { Calendar, Clock, FileText, Pill, CreditCard, Activity, Phone } from 'lucide-react';
+import { useSession } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
 
-interface PatientData {
-  nextAppointment: {
-    date: string;
-    time: string;
-    doctor: string;
-    type: string;
-  } | null;
-  recentRecords: number;
-  activePrescriptions: number;
-  upcomingAppointments: number;
+interface Patient {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface Appointment {
+  id: number;
+  doctorName: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  status: string;
+  reason: string;
+  notes?: string;
+}
+
+interface MedicalRecord {
+  id: number;
+  recordDate: string;
+  title: string;
+  description: string;
+  recordType: string;
+  doctorName: string;
+}
+
+interface Prescription {
+  id: number;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  status: string;
+  doctorName: string;
+  startDate: string;
+}
+
+interface Bill {
+  id: number;
+  amount: number;
+  description: string;
+  status: string;
+  billDate: string;
+  dueDate: string;
+}
+
+interface DashboardData {
+  patient: Patient;
+  upcomingAppointments: Appointment[];
+  recentMedicalRecords: MedicalRecord[];
+  activePrescriptions: Prescription[];
+  pendingBills: Bill[];
+  statistics: {
+    totalAppointments: number;
+    activePrescriptionsCount: number;
+    pendingBillsCount: number;
+    totalPendingAmount: number;
+  };
 }
 
 export default function PatientDashboard() {
-  const [patientData, setPatientData] = useState<PatientData>({
-    nextAppointment: {
-      date: "2024-02-15",
-      time: "2:30 PM", 
-      doctor: "Dr. Sarah Johnson",
-      type: "Regular Checkup"
-    },
-    recentRecords: 3,
-    activePrescriptions: 2,
-    upcomingAppointments: 1
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const quickActions = [
-    {
-      title: "Book Appointment",
-      description: "Schedule a new appointment with your healthcare provider",
-      icon: Calendar,
-      href: "/appointments/book",
-      color: "bg-blue-500"
-    },
-    {
-      title: "View Medical Records",
-      description: "Access your complete medical history and test results",
-      icon: FileText,
-      href: "/records", 
-      color: "bg-green-500"
-    },
-    {
-      title: "Prescriptions",
-      description: "View active prescriptions and request refills",
-      icon: Pill,
-      href: "/prescriptions",
-      color: "bg-purple-500"
-    },
-    {
-      title: "Bills & Payments",
-      description: "View outstanding bills and payment history",
-      icon: CreditCard,
-      href: "/billing",
-      color: "bg-orange-500"
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isPending && !session?.user) {
+      router.push('/login');
     }
-  ];
+  }, [session, isPending, router]);
 
-  const statsCards = [
-    {
-      title: "Upcoming Appointments",
-      value: patientData.upcomingAppointments,
-      icon: CalendarDays,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "Recent Records",
-      value: patientData.recentRecords,
-      icon: FileText,
-      color: "text-green-600",
-      bgColor: "bg-green-50"
-    },
-    {
-      title: "Active Prescriptions", 
-      value: patientData.activePrescriptions,
-      icon: Pill,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // For demo purposes, we'll use patient ID 1
+        // In a real app, you'd get this from the user's session or profile
+        const patientId = 1;
+        
+        const token = localStorage.getItem("bearer_token");
+        const response = await fetch(`/api/patients/${patientId}/dashboard`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch dashboard data: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session?.user) {
+      fetchDashboardData();
     }
-  ];
+  }, [session]);
+
+  if (isPending || loading) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white p-6 rounded-lg shadow-sm border">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <Activity className="h-12 w-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Unable to load dashboard</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <AppLayout>
+        <div className="text-center py-12">
+          <p className="text-gray-600">No dashboard data available</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const { patient, upcomingAppointments, recentMedicalRecords, activePrescriptions, pendingBills, statistics } = dashboardData;
 
   return (
     <AppLayout>
-      <div className="space-y-8 p-6">
-        {/* Welcome Section */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">
-            Welcome to Your Patient Portal
-          </h1>
-          <p className="text-muted-foreground">
-            Access your medical information, appointments, and healthcare services all in one place.
-          </p>
+      <div className="space-y-6">
+        {/* Welcome Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-6">
+          <h1 className="text-2xl font-bold mb-2">Welcome back, {patient.name}!</h1>
+          <p className="text-blue-100">Here's an overview of your health information.</p>
         </div>
 
-        {/* Next Appointment Card */}
-        {patientData.nextAppointment && (
-          <Card className="border-blue-200 bg-blue-50/50">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-blue-900">Next Appointment</CardTitle>
-                </div>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  Upcoming
-                </Badge>
+        {/* Key Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Calendar className="h-6 w-6 text-blue-600" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="text-lg font-semibold text-blue-900">
-                  {patientData.nextAppointment.type}
-                </p>
-                <p className="text-blue-700">
-                  <strong>Date:</strong> {new Date(patientData.nextAppointment.date).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </p>
-                <p className="text-blue-700">
-                  <strong>Time:</strong> {patientData.nextAppointment.time}
-                </p>
-                <p className="text-blue-700">
-                  <strong>Provider:</strong> {patientData.nextAppointment.doctor}
-                </p>
-                <div className="flex gap-2 mt-4">
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                    View Details
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-blue-600 text-blue-600">
-                    Reschedule
-                  </Button>
-                </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Appointments</p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.totalAppointments}</p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {statsCards.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {stat.title}
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {stat.value}
-                      </p>
-                    </div>
-                    <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                      <Icon className={`h-6 w-6 ${stat.color}`} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Pill className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Active Prescriptions</p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.activePrescriptionsCount}</p>
+              </div>
+            </div>
+          </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <Card 
-                  key={index} 
-                  className="hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                >
-                  <CardHeader>
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${action.color} text-white group-hover:scale-110 transition-transform`}>
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                          {action.title}
-                        </CardTitle>
-                        <CardDescription className="text-sm">
-                          {action.description}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              );
-            })}
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <CreditCard className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pending Bills</p>
+                <p className="text-2xl font-bold text-gray-900">{statistics.pendingBillsCount}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <CreditCard className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Amount Due</p>
+                <p className="text-2xl font-bold text-gray-900">${statistics.totalPendingAmount.toFixed(2)}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Your latest healthcare interactions and updates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
-                <Activity className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="font-medium">Lab results available</p>
-                  <p className="text-sm text-muted-foreground">Blood work from January 28, 2024</p>
+        {/* Next Appointment */}
+        {upcomingAppointments.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Next Appointment</h2>
+            </div>
+            <div className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-4">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <Calendar className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">{upcomingAppointments[0].reason}</h3>
+                    <p className="text-sm text-gray-600">with {upcomingAppointments[0].doctorName}</p>
+                    <div className="flex items-center mt-2 text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      <span>{new Date(upcomingAppointments[0].appointmentDate).toLocaleDateString()}</span>
+                      <Clock className="h-4 w-4 ml-4 mr-1" />
+                      <span>{upcomingAppointments[0].appointmentTime}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
-                <Pill className="h-5 w-5 text-purple-600" />
-                <div>
-                  <p className="font-medium">Prescription refill ready</p>
-                  <p className="text-sm text-muted-foreground">Available for pickup at your pharmacy</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                <div>
-                  <p className="font-medium">Appointment reminder</p>
-                  <p className="text-sm text-muted-foreground">Regular checkup scheduled for February 15</p>
-                </div>
+                <button className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                  Reschedule
+                </button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <Calendar className="h-6 w-6 text-blue-600 mr-3" />
+                <span className="font-medium">Book Appointment</span>
+              </button>
+              <button className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <FileText className="h-6 w-6 text-green-600 mr-3" />
+                <span className="font-medium">View Records</span>
+              </button>
+              <button className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <Pill className="h-6 w-6 text-purple-600 mr-3" />
+                <span className="font-medium">Prescriptions</span>
+              </button>
+              <button className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <CreditCard className="h-6 w-6 text-orange-600 mr-3" />
+                <span className="font-medium">Bills & Payments</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Medical Records */}
+          <div className="bg-white rounded-lg shadow-sm border">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Recent Medical Records</h2>
+            </div>
+            <div className="p-6">
+              {recentMedicalRecords.length > 0 ? (
+                <div className="space-y-4">
+                  {recentMedicalRecords.slice(0, 5).map((record) => (
+                    <div key={record.id} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{record.title}</p>
+                        <p className="text-sm text-gray-600">by {record.doctorName}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(record.recordDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <button className="w-full mt-4 py-2 text-sm text-blue-600 border border-blue-200 rounded-md hover:bg-blue-50">
+                    View All Records
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">No medical records available</p>
+              )}
+            </div>
+          </div>
+
+          {/* Active Prescriptions */}
+          <div className="bg-white rounded-lg shadow-sm border">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Active Prescriptions</h2>
+            </div>
+            <div className="p-6">
+              {activePrescriptions.length > 0 ? (
+                <div className="space-y-4">
+                  {activePrescriptions.slice(0, 5).map((prescription) => (
+                    <div key={prescription.id} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <Pill className="h-5 w-5 text-green-600 mt-0.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{prescription.medicationName}</p>
+                        <p className="text-sm text-gray-600">{prescription.dosage} - {prescription.frequency}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Prescribed by {prescription.doctorName}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <button className="w-full mt-4 py-2 text-sm text-green-600 border border-green-200 rounded-md hover:bg-green-50">
+                    View All Prescriptions
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">No active prescriptions</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Bills */}
+        {pendingBills.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Pending Bills</h2>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {pendingBills.slice(0, 3).map((bill) => (
+                  <div key={bill.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-900">{bill.description}</p>
+                      <p className="text-sm text-gray-600">
+                        Due: {new Date(bill.dueDate).toLocaleDateString()}
+                      </p>
+                      <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                        bill.status === 'overdue' 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {bill.status.charAt(0).toUpperCase() + bill.status.slice(1)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900">${bill.amount.toFixed(2)}</p>
+                      <button className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Pay Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {pendingBills.length > 3 && (
+                  <button className="w-full mt-4 py-2 text-sm text-orange-600 border border-orange-200 rounded-md hover:bg-orange-50">
+                    View All Bills ({pendingBills.length - 3} more)
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
