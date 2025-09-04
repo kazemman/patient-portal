@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1756773566273,
-      "tag": "0000_smart_hex",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1756775445082,
-      "tag": "0001_lush_shadowcat",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1756777837824,
-      "tag": "0002_careless_jane_foster",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1756835689653,
-      "tag": "0003_famous_surge",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1756842254831,
-      "tag": "0004_stale_la_nuit",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1756966166502,
-      "tag": "0005_outgoing_princess_powerful",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1756968602631,
-      "tag": "0006_lazy_sasquatch",
+      "when": 1756985727586,
+      "tag": "0000_overconfident_proemial_gods",
       "breakpoints": true
     }
   ]

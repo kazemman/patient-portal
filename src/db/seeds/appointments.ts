@@ -2,189 +2,227 @@ import { db } from '@/db';
 import { appointments } from '@/db/schema';
 
 async function main() {
-    const appointmentReasons = [
-        'General checkup',
-        'Follow-up consultation', 
-        'Blood pressure check',
-        'Diabetes monitoring',
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    const appointmentNotes = [
+        'Regular checkup',
+        'Follow-up visit',
+        'Blood pressure monitoring',
         'Vaccination',
-        'Physical therapy',
-        'Dermatology consultation',
-        'Cardiology review',
-        'Dental cleaning',
-        'Eye examination',
-        'Annual physical',
-        'Medication review',
-        'Lab results discussion',
-        'Chronic pain management',
-        'Preventive screening'
+        'Consultation',
+        'Physical examination',
+        'Lab results review',
+        'Medication adjustment',
+        'Preventive care visit',
+        'Symptom evaluation',
+        'Chronic condition management',
+        'Wellness check',
+        'Treatment follow-up',
+        'Health screening',
+        'Annual physical'
     ];
 
-    const sampleNotes = [
-        'Patient reported improvement in symptoms',
-        'Needs follow-up in 2 weeks',
-        'Blood pressure slightly elevated',
-        'Prescription updated',
-        'Patient cancelled due to travel',
-        'No-show - reschedule needed',
-        'Completed routine examination',
-        'Discussed treatment options',
-        'Patient satisfied with progress',
-        'Requires additional testing',
-        'Normal vital signs recorded',
-        'Patient education provided',
-        'Treatment plan reviewed',
-        'Symptoms have improved significantly',
-        'Referred to specialist'
+    const clinicTimes = [
+        '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+        '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+        '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+        '17:00', '17:30'
     ];
 
-    const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-    
-    const getRandomDate = (startDate: Date, endDate: Date): Date => {
-        const start = startDate.getTime();
-        const end = endDate.getTime();
-        return new Date(start + Math.random() * (end - start));
-    };
+    const sampleAppointments = [
+        // Today's appointments - 8 total (3 completed, 2 scheduled, 3 cancelled)
+        {
+            patientId: 1,
+            appointmentDate: `${today.toISOString().split('T')[0]}T08:00:00.000Z`,
+            status: 'completed',
+            notes: 'Regular checkup',
+            createdAt: new Date('2024-01-10').toISOString(),
+        },
+        {
+            patientId: 3,
+            appointmentDate: `${today.toISOString().split('T')[0]}T09:30:00.000Z`,
+            status: 'completed',
+            notes: 'Blood pressure monitoring',
+            createdAt: new Date('2024-01-11').toISOString(),
+        },
+        {
+            patientId: 5,
+            appointmentDate: `${today.toISOString().split('T')[0]}T11:00:00.000Z`,
+            status: 'completed',
+            notes: 'Follow-up visit',
+            createdAt: new Date('2024-01-12').toISOString(),
+        },
+        {
+            patientId: 7,
+            appointmentDate: `${today.toISOString().split('T')[0]}T13:00:00.000Z`,
+            status: 'scheduled',
+            notes: 'Vaccination',
+            createdAt: new Date('2024-01-13').toISOString(),
+        },
+        {
+            patientId: 9,
+            appointmentDate: `${today.toISOString().split('T')[0]}T14:30:00.000Z`,
+            status: 'scheduled',
+            notes: 'Consultation',
+            createdAt: new Date('2024-01-14').toISOString(),
+        },
+        {
+            patientId: 11,
+            appointmentDate: `${today.toISOString().split('T')[0]}T10:00:00.000Z`,
+            status: 'cancelled',
+            notes: 'Physical examination',
+            createdAt: new Date('2024-01-15').toISOString(),
+        },
+        {
+            patientId: 13,
+            appointmentDate: `${today.toISOString().split('T')[0]}T15:30:00.000Z`,
+            status: 'cancelled',
+            notes: 'Lab results review',
+            createdAt: new Date('2024-01-16').toISOString(),
+        },
+        {
+            patientId: 15,
+            appointmentDate: `${today.toISOString().split('T')[0]}T17:00:00.000Z`,
+            status: 'cancelled',
+            notes: 'Medication adjustment',
+            createdAt: new Date('2024-01-17').toISOString(),
+        },
 
-    const getBusinessHour = (): string => {
-        const hours = [8, 9, 10, 11, 13, 14, 15, 16, 17];
-        const minutes = [0, 15, 30, 45];
-        const hour = getRandomElement(hours);
-        const minute = getRandomElement(minutes);
-        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    };
+        // Yesterday's appointments - 5 total (all completed)
+        {
+            patientId: 2,
+            appointmentDate: `${yesterday.toISOString().split('T')[0]}T09:00:00.000Z`,
+            status: 'completed',
+            notes: 'Annual physical',
+            createdAt: new Date('2024-01-08').toISOString(),
+        },
+        {
+            patientId: 4,
+            appointmentDate: `${yesterday.toISOString().split('T')[0]}T11:30:00.000Z`,
+            status: 'completed',
+            notes: 'Chronic condition management',
+            createdAt: new Date('2024-01-09').toISOString(),
+        },
+        {
+            patientId: 6,
+            appointmentDate: `${yesterday.toISOString().split('T')[0]}T14:00:00.000Z`,
+            status: 'completed',
+            notes: 'Symptom evaluation',
+            createdAt: new Date('2024-01-10').toISOString(),
+        },
+        {
+            patientId: 8,
+            appointmentDate: `${yesterday.toISOString().split('T')[0]}T15:30:00.000Z`,
+            status: 'completed',
+            notes: 'Wellness check',
+            createdAt: new Date('2024-01-11').toISOString(),
+        },
+        {
+            patientId: 10,
+            appointmentDate: `${yesterday.toISOString().split('T')[0]}T16:30:00.000Z`,
+            status: 'completed',
+            notes: 'Treatment follow-up',
+            createdAt: new Date('2024-01-12').toISOString(),
+        },
 
-    const getEveningHour = (): string => {
-        const hours = [18, 19, 20];
-        const minutes = [0, 30];
-        const hour = getRandomElement(hours);
-        const minute = getRandomElement(minutes);
-        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    };
+        // Tomorrow's appointments - 7 total (all scheduled)
+        {
+            patientId: 1,
+            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T08:30:00.000Z`,
+            status: 'scheduled',
+            notes: 'Health screening',
+            createdAt: new Date('2024-01-18').toISOString(),
+        },
+        {
+            patientId: 12,
+            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T10:30:00.000Z`,
+            status: 'scheduled',
+            notes: 'Regular checkup',
+            createdAt: new Date('2024-01-19').toISOString(),
+        },
+        {
+            patientId: 14,
+            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T12:00:00.000Z`,
+            status: 'scheduled',
+            notes: 'Preventive care visit',
+            createdAt: new Date('2024-01-20').toISOString(),
+        },
+        {
+            patientId: 3,
+            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T13:30:00.000Z`,
+            status: 'scheduled',
+            notes: 'Follow-up visit',
+            createdAt: new Date('2024-01-21').toISOString(),
+        },
+        {
+            patientId: 5,
+            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T15:00:00.000Z`,
+            status: 'scheduled',
+            notes: 'Blood pressure monitoring',
+            createdAt: new Date('2024-01-22').toISOString(),
+        },
+        {
+            patientId: 7,
+            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T16:00:00.000Z`,
+            status: 'scheduled',
+            notes: 'Consultation',
+            createdAt: new Date('2024-01-23').toISOString(),
+        },
+        {
+            patientId: 9,
+            appointmentDate: `${tomorrow.toISOString().split('T')[0]}T17:30:00.000Z`,
+            status: 'scheduled',
+            notes: 'Vaccination',
+            createdAt: new Date('2024-01-24').toISOString(),
+        },
 
-    const getDuration = (): number => {
-        const rand = Math.random();
-        if (rand < 0.8) return 30; // 80% standard
-        if (rand < 0.95) return Math.random() < 0.5 ? 45 : 60; // 15% longer
-        return 15; // 5% short
-    };
-
-    const sampleAppointments = [];
-    const now = new Date();
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-    const threeMonthsFromNow = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
-
-    // Track patient appointment counts for realistic distribution
-    const patientAppointmentCounts = new Array(60).fill(0);
-
-    for (let i = 0; i < 250; i++) {
-        // Select patient ID (1-60) with weighted distribution for repeat patients
-        let patientId;
-        if (Math.random() < 0.3) {
-            // 30% chance to give appointment to patient who already has one
-            const patientsWithAppointments = patientAppointmentCounts
-                .map((count, index) => count > 0 ? index + 1 : null)
-                .filter(id => id !== null);
-            
-            if (patientsWithAppointments.length > 0) {
-                patientId = getRandomElement(patientsWithAppointments);
-            } else {
-                patientId = Math.floor(Math.random() * 60) + 1;
-            }
-        } else {
-            // 70% chance for any patient
-            patientId = Math.floor(Math.random() * 60) + 1;
+        // Next week's appointments - 5 total (all scheduled)
+        {
+            patientId: 11,
+            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T09:00:00.000Z`,
+            status: 'scheduled',
+            notes: 'Physical examination',
+            createdAt: new Date('2024-01-25').toISOString(),
+        },
+        {
+            patientId: 13,
+            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T11:00:00.000Z`,
+            status: 'scheduled',
+            notes: 'Lab results review',
+            createdAt: new Date('2024-01-26').toISOString(),
+        },
+        {
+            patientId: 15,
+            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T14:00:00.000Z`,
+            status: 'scheduled',
+            notes: 'Medication adjustment',
+            createdAt: new Date('2024-01-27').toISOString(),
+        },
+        {
+            patientId: 2,
+            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T15:30:00.000Z`,
+            status: 'scheduled',
+            notes: 'Chronic condition management',
+            createdAt: new Date('2024-01-28').toISOString(),
+        },
+        {
+            patientId: 4,
+            appointmentDate: `${nextWeek.toISOString().split('T')[0]}T16:30:00.000Z`,
+            status: 'scheduled',
+            notes: 'Wellness check',
+            createdAt: new Date('2024-01-29').toISOString(),
         }
-        
-        patientAppointmentCounts[patientId - 1]++;
-
-        // Determine if past or future appointment (60% past, 40% future)
-        const isPast = Math.random() < 0.6;
-        
-        let appointmentDate: Date;
-        let status: string;
-        
-        if (isPast) {
-            appointmentDate = getRandomDate(sixMonthsAgo, now);
-            // Past appointments: 60% completed, 20% cancelled, 15% no_show, 5% scheduled (missed)
-            const statusRand = Math.random();
-            if (statusRand < 0.6) status = 'completed';
-            else if (statusRand < 0.8) status = 'cancelled';
-            else if (statusRand < 0.95) status = 'no_show';
-            else status = 'scheduled';
-        } else {
-            appointmentDate = getRandomDate(now, threeMonthsFromNow);
-            // Future appointments: 90% scheduled, 10% cancelled
-            status = Math.random() < 0.9 ? 'scheduled' : 'cancelled';
-        }
-
-        // Set appointment time (mostly business hours, some evening)
-        const timeSlot = Math.random() < 0.85 ? getBusinessHour() : getEveningHour();
-        
-        // Occasionally add weekend appointments
-        if (Math.random() < 0.1) {
-            const day = appointmentDate.getDay();
-            if (day !== 0 && day !== 6) { // If not already weekend
-                appointmentDate.setDate(appointmentDate.getDate() + (6 - day)); // Move to Saturday
-            }
-        }
-
-        // Set full datetime
-        const [hours, minutes] = timeSlot.split(':').map(Number);
-        appointmentDate.setHours(hours, minutes, 0, 0);
-
-        // Generate appropriate notes based on status
-        let notes = '';
-        if (status === 'completed') {
-            notes = getRandomElement([
-                'Patient reported improvement in symptoms',
-                'Completed routine examination',
-                'Discussed treatment options',
-                'Patient satisfied with progress',
-                'Normal vital signs recorded',
-                'Patient education provided',
-                'Treatment plan reviewed',
-                'Symptoms have improved significantly'
-            ]);
-        } else if (status === 'cancelled') {
-            notes = getRandomElement([
-                'Patient cancelled due to travel',
-                'Rescheduled due to emergency',
-                'Patient requested cancellation',
-                'Cancelled due to illness'
-            ]);
-        } else if (status === 'no_show') {
-            notes = getRandomElement([
-                'No-show - reschedule needed',
-                'Patient did not attend',
-                'Failed to show up for appointment'
-            ]);
-        } else if (status === 'scheduled') {
-            notes = isPast ? 'Missed appointment - needs follow-up' : 'Appointment confirmed';
-        }
-
-        const createdAt = new Date(appointmentDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000);
-        const updatedAt = status === 'scheduled' ? createdAt : 
-            new Date(appointmentDate.getTime() + Math.random() * 24 * 60 * 60 * 1000);
-
-        sampleAppointments.push({
-            patientId,
-            appointmentDate: appointmentDate.toISOString(),
-            durationMinutes: getDuration(),
-            reason: getRandomElement(appointmentReasons),
-            notes,
-            status,
-            createdAt: createdAt.toISOString(),
-            updatedAt: updatedAt.toISOString(),
-        });
-    }
-
-    // Sort appointments by date for better data organization
-    sampleAppointments.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
+    ];
 
     await db.insert(appointments).values(sampleAppointments);
     
-    console.log('✅ Appointments seeder completed successfully - 250 appointments created');
+    console.log('✅ Appointments seeder completed successfully');
 }
 
 main().catch((error) => {
