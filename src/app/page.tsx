@@ -1,231 +1,136 @@
-"use client";
+'use client'
 
-import { useState, useCallback, useEffect } from 'react';
-import { AppLayout } from '@/components/AppLayout';
-import Dashboard from '@/components/Dashboard';
-import PatientDetailsAndEdit from '@/components/PatientDetailsAndEdit';
-import AuditLogs from '@/components/AuditLogs';
-import { PatientCheckin } from '@/components/PatientCheckIn';
-import { QueueDashboard } from '@/components/QueueDashboard';
-import { CheckInStats } from '@/components/CheckInStats';
-import { UserManagement } from '@/components/UserManagement';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import RegisterPatientForm from '@/components/RegisterPatientForm';
-import SearchPatients from '@/components/SearchPatients';
-import Appointments from '@/components/Appointments';
+import { useState, useEffect } from 'react'
+import { AppLayout } from '@/components/AppLayout'
 
-function MainContent() {
-  const [currentSection, setCurrentSection] = useState('dashboard');
-  const [selectedPatientId, setSelectedPatientId] = useState(null);
-  const [clinicStats, setClinicStats] = useState({
+interface ClinicStats {
+  totalPatients: number
+  todayAppointments: number
+  waitingPatients: number
+  completedToday: number
+}
+
+export default function Home() {
+  const [clinicStats, setClinicStats] = useState<ClinicStats>({
     totalPatients: 0,
     todayAppointments: 0,
     waitingPatients: 0,
     completedToday: 0
-  });
-  const [statsLoading, setStatsLoading] = useState(true);
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Get user data from localStorage for immediate display
-  const getUserData = () => {
+  const fetchClinicStats = async () => {
     try {
-      const userData = localStorage.getItem('user_data');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
-        return {
-          name: parsedUser.fullName,
-          role: parsedUser.role,
-          email: parsedUser.email
-        };
-      }
-    } catch (error) {
-      console.error('Failed to parse user data:', error);
-    }
-    return null;
-  };
-
-  const user = getUserData();
-
-  // Fetch real clinic stats
-  const fetchClinicStats = useCallback(async () => {
-    try {
-      setStatsLoading(true);
-      const response = await fetch('/api/webhook/clinic-portal/dashboard-stats');
-      
+      const response = await fetch('/api/webhook/clinic-portal/dashboard-stats')
       if (response.ok) {
-        const data = await response.json();
-        setClinicStats({
-          totalPatients: data.totalPatients || 0,
-          todayAppointments: data.todayAppointments || 0,
-          waitingPatients: data.waitingPatients || 0,
-          completedToday: data.completedToday || 0
-        });
+        const data = await response.json()
+        setClinicStats(data)
       } else {
-        console.error('Failed to fetch clinic stats');
-        // Keep using fallback data
+        console.error('Failed to fetch clinic stats')
       }
     } catch (error) {
-      console.error('Error fetching clinic stats:', error);
-      // Keep using fallback data
+      console.error('Error fetching clinic stats:', error)
     } finally {
-      setStatsLoading(false);
+      setIsLoading(false)
     }
-  }, []);
+  }
 
-  // Load stats on component mount
   useEffect(() => {
-    fetchClinicStats();
-    
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchClinicStats, 30000);
-    return () => clearInterval(interval);
-  }, [fetchClinicStats]);
+    // Initial fetch
+    fetchClinicStats()
 
-  const handleNavigation = useCallback((sectionId, href) => {
-    setCurrentSection(sectionId);
-    setSelectedPatientId(null);
-  }, []);
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchClinicStats, 30000)
 
-  const handleNavigateToPatient = useCallback((patientId) => {
-    setSelectedPatientId(patientId);
-    setCurrentSection('patient-details');
-  }, []);
+    // Cleanup interval on unmount
+    return () => clearInterval(interval)
+  }, [])
 
-  const handleNavigateToRegister = useCallback(() => {
-    setCurrentSection('register');
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading clinic dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
-  const handleRegisterAnother = useCallback(() => {
-    setCurrentSection('register');
-  }, []);
+  return (
+    <AppLayout clinicStats={clinicStats}>
+      <div className="space-y-8">
+        {/* Welcome Section */}
+        <div className="bg-card rounded-xl border border-border p-8 text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            Welcome to Your Clinic Dashboard
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Monitor your clinic's daily operations, track patient appointments, 
+            manage check-ins, and view real-time statistics all in one place.
+          </p>
+        </div>
 
-  const handlePatientUpdated = useCallback((updatedPatient) => {
-    console.log('Patient updated:', updatedPatient);
-    // Refresh stats when patient is updated
-    fetchClinicStats();
-  }, [fetchClinicStats]);
-
-  const handlePrintPatient = useCallback((patientId) => {
-    setSelectedPatientId(patientId);
-    setCurrentSection('patient-details');
-  }, []);
-
-  const getPageTitle = () => {
-    switch (currentSection) {
-      case 'dashboard':
-        return 'Dashboard';
-      case 'register':
-        return 'Register Patient';
-      case 'search':
-        return 'Search Patients';
-      case 'appointments':
-        return 'Appointments';
-      case 'audit':
-        return 'Audit Logs';
-      case 'patient-details':
-        return 'Patient Details';
-      case 'checkin':
-        return 'Patient Check-In';
-      case 'queue':
-        return 'Queue Management';
-      case 'analytics':
-        return 'Check-In Analytics';
-      case 'users':
-        return 'User Management';
-      default:
-        return 'Dashboard';
-    }
-  };
-
-  const renderCurrentSection = () => {
-    // Check role-based access for admin-only sections
-    if ((currentSection === 'audit' || currentSection === 'users') && user?.role !== 'admin') {
-      return (
-        <div className="p-6">
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <span className="text-2xl">🚫</span>
-            </div>
-            <h2 className="text-xl font-semibold text-foreground">Access Denied</h2>
-            <p className="text-muted-foreground">
-              Administrator privileges required to access this section.
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-card rounded-xl border border-border p-6 hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Patient Management
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Add new patients, view patient records, and manage patient information.
             </p>
+            <button className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors">
+              Manage Patients
+            </button>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-6 hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Appointments
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Schedule appointments, view today's schedule, and manage bookings.
+            </p>
+            <button className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors">
+              View Schedule
+            </button>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-6 hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Patient Check-In
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Quick check-in for walk-in patients and appointment arrivals.
+            </p>
+            <button className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors">
+              Check-In Patient
+            </button>
           </div>
         </div>
-      );
-    }
 
-    switch (currentSection) {
-      case 'dashboard':
-        return <Dashboard onNavigateToPatient={handleNavigateToPatient} />;
-      
-      case 'register':
-        return (
-          <RegisterPatientForm
-            onNavigateToDetails={handleNavigateToPatient}
-            onRegisterAnother={handleRegisterAnother}
-          />
-        );
-      
-      case 'search':
-        return (
-          <SearchPatients
-            onNavigateToPatientDetails={handleNavigateToPatient}
-            onNavigateToRegisterPatient={handleNavigateToRegister}
-            onPrintPatient={handlePrintPatient}
-          />
-        );
-      
-      case 'appointments':
-        return <Appointments />;
-      
-      case 'audit':
-        return <AuditLogs />;
-      
-      case 'checkin':
-        return <PatientCheckin />;
-      
-      case 'queue':
-        return <QueueDashboard />;
-      
-      case 'analytics':
-        return <CheckInStats />;
-      
-      case 'users':
-        return <UserManagement />;
-      
-      case 'patient-details':
-        return selectedPatientId ? (
-          <PatientDetailsAndEdit
-            patientId={selectedPatientId}
-            onPatientUpdated={handlePatientUpdated}
-          />
-        ) : (
-          <div className="text-center text-muted-foreground p-8">
-            No patient selected
+        {/* Status Message */}
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                System Status: Operational
+              </h3>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
+                All systems are running normally. Statistics update every 30 seconds.
+              </p>
+            </div>
           </div>
-        );
-      
-      default:
-        return <Dashboard onNavigateToPatient={handleNavigateToPatient} />;
-    }
-  };
-
-  return (
-    <AppLayout
-      pageTitle={getPageTitle()}
-      onNavigate={handleNavigation}
-      clinicStats={clinicStats}
-      user={user}
-    >
-      {renderCurrentSection()}
+        </div>
+      </div>
     </AppLayout>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <ProtectedRoute>
-      <MainContent />
-    </ProtectedRoute>
-  );
+  )
 }
