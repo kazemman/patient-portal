@@ -12,7 +12,10 @@ import {
   Activity,
   Settings,
   FileText,
-  Heart
+  Heart,
+  Pill,
+  CreditCard,
+  User
 } from 'lucide-react'
 import {
   Sidebar,
@@ -37,8 +40,9 @@ interface ClinicStats {
 }
 
 interface AppLayoutProps {
-  clinicStats: ClinicStats
+  clinicStats?: ClinicStats // Made optional
   children: React.ReactNode
+  isPatientPortal?: boolean // New prop to determine layout type
 }
 
 interface StatCardProps {
@@ -68,8 +72,8 @@ const StatCard = ({ title, value, icon, iconColor = "text-primary" }: StatCardPr
   )
 }
 
-// Navigation items for clinic portal
-const navigationItems = [
+// Navigation items for clinic portal (staff)
+const clinicNavigationItems = [
   {
     title: "Dashboard",
     url: "/",
@@ -107,8 +111,48 @@ const navigationItems = [
   },
 ]
 
-export const AppLayout = ({ clinicStats, children }: AppLayoutProps) => {
+// Navigation items for patient portal
+const patientNavigationItems = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "My Appointments",
+    url: "/appointments",
+    icon: Calendar,
+  },
+  {
+    title: "Medical Records",
+    url: "/records",
+    icon: FileText,
+  },
+  {
+    title: "Prescriptions",
+    url: "/prescriptions",
+    icon: Pill,
+  },
+  {
+    title: "Bills & Payments",
+    url: "/billing",
+    icon: CreditCard,
+  },
+  {
+    title: "My Profile",
+    url: "/profile",
+    icon: User,
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: Settings,
+  },
+]
+
+export const AppLayout = ({ clinicStats, children, isPatientPortal = true }: AppLayoutProps) => {
   const pathname = usePathname()
+  const navigationItems = isPatientPortal ? patientNavigationItems : clinicNavigationItems
 
   return (
     <SidebarProvider>
@@ -157,49 +201,51 @@ export const AppLayout = ({ clinicStats, children }: AppLayoutProps) => {
         </Sidebar>
 
         <SidebarInset>
-          {/* Top Header with Stats */}
+          {/* Top Header */}
           <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
             <div className="flex items-center gap-2 px-6 py-4">
               <SidebarTrigger className="mr-2" />
               <div className="flex-1">
                 <h1 className="text-lg font-semibold text-foreground">
-                  Staff Portal
+                  {isPatientPortal ? "Patient Portal" : "Staff Portal"}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  InvoTech clinic management system
+                  {isPatientPortal ? "InvoTech patient healthcare portal" : "InvoTech clinic management system"}
                 </p>
               </div>
             </div>
 
-            {/* Statistics Grid */}
-            <div className="px-6 pb-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <StatCard
-                  title="Total Patients"
-                  value={clinicStats.totalPatients}
-                  icon={<Users className="w-4 h-4" />}
-                  iconColor="text-blue-600"
-                />
-                <StatCard
-                  title="Today's Appointments"
-                  value={clinicStats.todayAppointments}
-                  icon={<Calendar className="w-4 h-4" />}
-                  iconColor="text-green-600"
-                />
-                <StatCard
-                  title="Waiting Patients"
-                  value={clinicStats.waitingPatients}
-                  icon={<Clock className="w-4 h-4" />}
-                  iconColor="text-amber-600"
-                />
-                <StatCard
-                  title="Completed Today"
-                  value={clinicStats.completedToday}
-                  icon={<CheckCircle className="w-4 h-4" />}
-                  iconColor="text-emerald-600"
-                />
+            {/* Statistics Grid - Only show for clinic staff */}
+            {!isPatientPortal && clinicStats && (
+              <div className="px-6 pb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <StatCard
+                    title="Total Patients"
+                    value={clinicStats.totalPatients}
+                    icon={<Users className="w-4 h-4" />}
+                    iconColor="text-blue-600"
+                  />
+                  <StatCard
+                    title="Today's Appointments"
+                    value={clinicStats.todayAppointments}
+                    icon={<Calendar className="w-4 h-4" />}
+                    iconColor="text-green-600"
+                  />
+                  <StatCard
+                    title="Waiting Patients"
+                    value={clinicStats.waitingPatients}
+                    icon={<Clock className="w-4 h-4" />}
+                    iconColor="text-amber-600"
+                  />
+                  <StatCard
+                    title="Completed Today"
+                    value={clinicStats.completedToday}
+                    icon={<CheckCircle className="w-4 h-4" />}
+                    iconColor="text-emerald-600"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </header>
 
           {/* Main Content Area */}
