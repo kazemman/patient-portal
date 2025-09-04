@@ -1,4 +1,4 @@
-import { sqliteTable, integer, text } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, integer, text, real } from 'drizzle-orm/sqlite-core';
 
 // Patients table
 export const patients = sqliteTable('patients', {
@@ -66,6 +66,7 @@ export const checkins = sqliteTable('checkins', {
   waitingTimeMinutes: integer('waiting_time_minutes'),
   attendedAt: text('attended_at'),
   notes: text('notes'),
+  amount: real('amount'), // Amount in South African Rands (can be null for medical_aid only payments)
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

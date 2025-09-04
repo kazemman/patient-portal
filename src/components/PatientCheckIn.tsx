@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Search, User, CreditCard, Clock, CheckCircle, AlertCircle, Phone, Mail, IdCard, Shield, Calendar, Users } from 'lucide-react';
+import { Search, User, CreditCard, Clock, CheckCircle, AlertCircle, Phone, Mail, IdCard, Shield, Calendar, Users, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +56,7 @@ interface CheckinResponse {
   paymentMethod: string;
   status: string;
   notes: string;
+  amount: number | null;
   patient: {
     firstName: string;
     lastName: string;
@@ -104,6 +105,7 @@ export const PatientCheckin = () => {
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [amount, setAmount] = useState<string>('');
 
   // Fetch today's appointments
   const fetchTodayAppointments = useCallback(async () => {
@@ -204,6 +206,11 @@ export const PatientCheckin = () => {
   const handlePaymentMethodSelect = (method: PaymentMethod) => {
     setPaymentMethod(method);
     
+    // Reset amount when switching payment methods
+    if (method === 'medical_aid') {
+      setAmount('');
+    }
+    
     // Validate medical aid requirements
     if ((method === 'medical_aid' || method === 'both') && selectedPatient) {
       if (!selectedPatient.medicalAid || !selectedPatient.medicalAidNumber) {
@@ -219,6 +226,25 @@ export const PatientCheckin = () => {
   const handleCheckin = async () => {
     if (!selectedPatient || !paymentMethod) return;
 
+    // Validate amount for cash/both payment methods
+    if ((paymentMethod === 'cash' || paymentMethod === 'both') && !amount.trim()) {
+      toast.error('Amount is required for cash payments');
+      return;
+    }
+
+    // Validate amount format
+    if ((paymentMethod === 'cash' || paymentMethod === 'both') && amount.trim()) {
+      const numericAmount = parseFloat(amount);
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        toast.error('Please enter a valid amount greater than 0');
+        return;
+      }
+      if (numericAmount > 999999.99) {
+        toast.error('Amount cannot exceed R999,999.99');
+        return;
+      }
+    }
+
     setIsCheckingIn(true);
 
     try {
@@ -227,6 +253,11 @@ export const PatientCheckin = () => {
         payment_method: paymentMethod,
         notes: notes.trim() || undefined,
       };
+
+      // Add amount for cash/both payment methods
+      if ((paymentMethod === 'cash' || paymentMethod === 'both') && amount.trim()) {
+        checkinData.amount = parseFloat(amount);
+      }
 
       // Add appointment ID if checking in from appointment
       if (selectedAppointment) {
@@ -250,6 +281,9 @@ export const PatientCheckin = () => {
           PATIENT_NOT_FOUND: 'Patient not found or inactive',
           MISSING_MEDICAL_AID_INFO: 'Patient must have medical aid information for this payment method',
           DUPLICATE_CHECKIN: 'Patient is already checked in and waiting',
+          MISSING_AMOUNT: 'Amount is required for cash payments',
+          INVALID_AMOUNT: 'Please enter a valid amount',
+          AMOUNT_TOO_LARGE: 'Amount cannot exceed R999,999.99',
         };
 
         const errorMessage = errorMessages[data.code as keyof typeof errorMessages] || data.error || 'Check-in failed';
@@ -261,7 +295,8 @@ export const PatientCheckin = () => {
       setCurrentStep('complete');
       
       const appointmentText = selectedAppointment ? ' for their appointment' : '';
-      toast.success(`${selectedPatient.firstName} ${selectedPatient.lastName} has been checked in${appointmentText}!`);
+      const amountText = data.amount ? ` (Amount: R${data.amount.toFixed(2)})` : '';
+      toast.success(`${selectedPatient.firstName} ${selectedPatient.lastName} has been checked in${appointmentText}!${amountText}`);
 
       // Refresh appointments list if in appointment mode
       if (checkinMode === 'appointment') {
@@ -285,6 +320,7 @@ export const PatientCheckin = () => {
     setSelectedAppointment(null);
     setPaymentMethod('');
     setNotes('');
+    setAmount('');
     setCheckinResult(null);
     setSearchError(null);
   };
@@ -721,6 +757,33 @@ export const PatientCheckin = () => {
 
             {paymentMethod && (
               <div className="space-y-4">
+                {/* Amount Field - Show for cash or both */}
+                {(paymentMethod === 'cash' || paymentMethod === 'both') && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Amount (South African Rands) <span className="text-destructive">*</span>
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="pl-10"
+                        min="0"
+                        max="999999.99"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {paymentMethod === 'cash' && 'Enter the cash amount to be paid'}
+                      {paymentMethod === 'both' && 'Enter the cash portion (top-up amount)'}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">
                     Notes (Optional)
@@ -784,6 +847,11 @@ export const PatientCheckin = () => {
                   <p className="text-sm text-green-700">
                     Payment Method: {paymentMethodLabels[checkinResult.paymentMethod as PaymentMethod]}
                   </p>
+                  {checkinResult.amount && (
+                    <p className="text-sm text-green-700">
+                      Amount: R{checkinResult.amount.toFixed(2)}
+                    </p>
+                  )}
                   <p className="text-sm text-green-700">
                     Time: {new Date(checkinResult.checkinTime).toLocaleString()}
                   </p>

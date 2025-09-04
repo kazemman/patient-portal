@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { patient_id, payment_method, notes } = body;
+    const { patient_id, payment_method, notes, amount } = body;
 
     // Validate required fields
     if (!patient_id) {
@@ -39,6 +39,45 @@ export async function POST(request: NextRequest) {
         error: "Payment method must be one of: medical_aid, cash, both",
         code: "INVALID_PAYMENT_METHOD" 
       }, { status: 400 });
+    }
+
+    // Validate amount field based on payment method
+    let validatedAmount = null;
+    if (payment_method === 'cash' || payment_method === 'both') {
+      if (amount === undefined || amount === null) {
+        return NextResponse.json({ 
+          error: "Amount is required when payment method is 'cash' or 'both'",
+          code: "MISSING_AMOUNT" 
+        }, { status: 400 });
+      }
+
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount < 0) {
+        return NextResponse.json({ 
+          error: "Amount must be a valid positive number",
+          code: "INVALID_AMOUNT" 
+        }, { status: 400 });
+      }
+
+      if (parsedAmount > 999999.99) {
+        return NextResponse.json({ 
+          error: "Amount cannot exceed R999,999.99",
+          code: "AMOUNT_TOO_LARGE" 
+        }, { status: 400 });
+      }
+
+      // Round to 2 decimal places for currency
+      validatedAmount = Math.round(parsedAmount * 100) / 100;
+    } else if (payment_method === 'medical_aid' && amount !== undefined && amount !== null) {
+      // Optional validation: allow amount for medical_aid but validate if provided
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount < 0) {
+        return NextResponse.json({ 
+          error: "If provided, amount must be a valid positive number",
+          code: "INVALID_AMOUNT" 
+        }, { status: 400 });
+      }
+      validatedAmount = Math.round(parsedAmount * 100) / 100;
     }
 
     // Check if patient exists and is active
@@ -88,6 +127,7 @@ export async function POST(request: NextRequest) {
         paymentMethod: payment_method,
         status: 'waiting',
         notes: notes || null,
+        amount: validatedAmount,
         createdAt: currentTime,
         updatedAt: currentTime,
       })

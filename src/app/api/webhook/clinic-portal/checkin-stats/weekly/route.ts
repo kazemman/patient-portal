@@ -90,6 +90,13 @@ interface WeeklyCheckInData {
   };
   average_waiting_time: number;
   daily_average: number;
+  total_amount_collected: number;
+  amount_breakdown_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface WeeklySummary {
@@ -103,6 +110,14 @@ interface WeeklySummary {
   };
   attendance_rate: number;
   busiest_day_of_week: string;
+  total_revenue: number;
+  average_weekly_revenue: number;
+  revenue_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface WeeklyStatsResponse {
@@ -204,10 +219,14 @@ export async function GET(request: NextRequest) {
       week_start: string;
       week_end: string;
       checkins: typeof checkinsData;
+      amounts: { medical_aid: number[]; cash: number[]; both: number[] };
     }>();
 
     // Track daily counts for busiest day calculation
     const dailyCounts = new Map<string, number>();
+
+    // Overall amounts tracking
+    const overallAmounts = { medical_aid: [] as number[], cash: [] as number[], both: [] as number[] };
 
     // Process each check-in record
     checkinsData.forEach(checkin => {
@@ -226,17 +245,26 @@ export async function GET(request: NextRequest) {
           week: isoWeek,
           week_start: weekStart.toISOString().split('T')[0],
           week_end: weekEnd.toISOString().split('T')[0],
-          checkins: []
+          checkins: [],
+          amounts: { medical_aid: [], cash: [], both: [] }
         });
       }
       
       // Add checkin to week data
-      weeklyDataMap.get(isoWeek)!.checkins.push(checkin);
+      const weekData = weeklyDataMap.get(isoWeek)!;
+      weekData.checkins.push(checkin);
+
+      // Track amounts by payment method
+      const paymentMethod = checkin.paymentMethod as keyof typeof weekData.amounts;
+      if (checkin.amount !== null && checkin.amount !== undefined) {
+        weekData.amounts[paymentMethod].push(checkin.amount);
+        overallAmounts[paymentMethod].push(checkin.amount);
+      }
     });
 
     // Calculate weekly statistics
     const weeklyStats: WeeklyCheckInData[] = Array.from(weeklyDataMap.values()).map(weekData => {
-      const { week, week_start, week_end, checkins: weekCheckins } = weekData;
+      const { week, week_start, week_end, checkins: weekCheckins, amounts } = weekData;
       
       // Initialize counters
       const paymentMethodBreakdown = {
@@ -272,6 +300,13 @@ export async function GET(request: NextRequest) {
       // Calculate averages
       const averageWaitingTime = attendedCount > 0 ? Math.round(totalWaitingTime / attendedCount) : 0;
       const dailyAverage = Math.round((weekCheckins.length / 7) * 100) / 100;
+
+      // Calculate amount statistics
+      const medicalAidTotal = amounts.medical_aid.reduce((sum, amount) => sum + amount, 0);
+      const cashTotal = amounts.cash.reduce((sum, amount) => sum + amount, 0);
+      const bothTotal = amounts.both.reduce((sum, amount) => sum + amount, 0);
+      const totalAmountCollected = medicalAidTotal + cashTotal + bothTotal;
+      const avgAmountPerCheckin = weekCheckins.length > 0 ? totalAmountCollected / weekCheckins.length : 0;
       
       return {
         week,
@@ -281,7 +316,14 @@ export async function GET(request: NextRequest) {
         payment_method_breakdown: paymentMethodBreakdown,
         status_breakdown: statusBreakdown,
         average_waiting_time: averageWaitingTime,
-        daily_average: dailyAverage
+        daily_average: dailyAverage,
+        total_amount_collected: Math.round(totalAmountCollected * 100) / 100,
+        amount_breakdown_by_payment_method: {
+          medical_aid: Math.round(medicalAidTotal * 100) / 100,
+          cash: Math.round(cashTotal * 100) / 100,
+          both: Math.round(bothTotal * 100) / 100
+        },
+        average_amount_per_checkin: Math.round(avgAmountPerCheckin * 100) / 100
       };
     });
 
@@ -331,13 +373,29 @@ export async function GET(request: NextRequest) {
     const overallAvgWaitingTime = totalAttendedWithWaitTime > 0 ? Math.round(totalWaitingTime / totalAttendedWithWaitTime) : 0;
     const attendanceRate = totalCheckins > 0 ? Math.round((totalAttended / totalCheckins) * 10000) / 100 : 0;
 
+    // Calculate overall revenue statistics
+    const overallMedicalAidRevenue = overallAmounts.medical_aid.reduce((sum, amount) => sum + amount, 0);
+    const overallCashRevenue = overallAmounts.cash.reduce((sum, amount) => sum + amount, 0);
+    const overallBothRevenue = overallAmounts.both.reduce((sum, amount) => sum + amount, 0);
+    const totalRevenue = overallMedicalAidRevenue + overallCashRevenue + overallBothRevenue;
+    const averageWeeklyRevenue = totalWeeks > 0 ? totalRevenue / totalWeeks : 0;
+    const avgAmountPerCheckin = totalCheckins > 0 ? totalRevenue / totalCheckins : 0;
+
     const summary: WeeklySummary = {
       total_weeks: totalWeeks,
       weekly_average_checkins: weeklyAverageCheckins,
       overall_avg_waiting_time: overallAvgWaitingTime,
       payment_method_totals: paymentMethodTotals,
       attendance_rate: attendanceRate,
-      busiest_day_of_week: busiestDay
+      busiest_day_of_week: busiestDay,
+      total_revenue: Math.round(totalRevenue * 100) / 100,
+      average_weekly_revenue: Math.round(averageWeeklyRevenue * 100) / 100,
+      revenue_by_payment_method: {
+        medical_aid: Math.round(overallMedicalAidRevenue * 100) / 100,
+        cash: Math.round(overallCashRevenue * 100) / 100,
+        both: Math.round(overallBothRevenue * 100) / 100
+      },
+      average_amount_per_checkin: Math.round(avgAmountPerCheckin * 100) / 100
     };
 
     const response: WeeklyStatsResponse = {

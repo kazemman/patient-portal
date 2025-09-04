@@ -20,6 +20,13 @@ interface DailyStatistics {
   average_waiting_time: number;
   attendance_rate: number;
   no_shows: number;
+  total_amount_collected: number;
+  amount_breakdown_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface Summary {
@@ -37,6 +44,14 @@ interface Summary {
     date: string;
     checkins: number;
   } | null;
+  total_revenue: number;
+  average_daily_revenue: number;
+  revenue_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface ApiResponse {
@@ -138,6 +153,7 @@ export async function GET(request: NextRequest) {
       paymentMethods: { medical_aid: number; cash: number; both: number };
       statuses: { waiting: number; attended: number; cancelled: number };
       waitingTimes: number[];
+      amounts: { medical_aid: number[]; cash: number[]; both: number[] };
     }>();
 
     // Initialize all dates with empty data
@@ -147,7 +163,8 @@ export async function GET(request: NextRequest) {
         checkins: [],
         paymentMethods: { medical_aid: 0, cash: 0, both: 0 },
         statuses: { waiting: 0, attended: 0, cancelled: 0 },
-        waitingTimes: []
+        waitingTimes: [],
+        amounts: { medical_aid: [], cash: [], both: [] }
       });
     });
 
@@ -157,6 +174,7 @@ export async function GET(request: NextRequest) {
     const overallStatuses = { waiting: 0, attended: 0, cancelled: 0 };
     let totalWaitingTime = 0;
     let attendedWithWaitingTime = 0;
+    const overallAmounts = { medical_aid: [] as number[], cash: [] as number[], both: [] as number[] };
 
     // Process each check-in record
     checkinData.forEach(checkin => {
@@ -181,6 +199,12 @@ export async function GET(request: NextRequest) {
         // Track waiting times for attended patients
         if (checkin.status === 'attended' && checkin.waitingTimeMinutes !== null && checkin.waitingTimeMinutes !== undefined) {
           dayData.waitingTimes.push(checkin.waitingTimeMinutes);
+        }
+
+        // Track amounts by payment method
+        if (checkin.amount !== null && checkin.amount !== undefined) {
+          dayData.amounts[paymentMethod].push(checkin.amount);
+          overallAmounts[paymentMethod].push(checkin.amount);
         }
       }
 
@@ -216,6 +240,13 @@ export async function GET(request: NextRequest) {
         ? Math.round(dayData.waitingTimes.reduce((sum, time) => sum + time, 0) / dayData.waitingTimes.length)
         : 0;
 
+      // Calculate amount statistics
+      const medicalAidTotal = dayData.amounts.medical_aid.reduce((sum, amount) => sum + amount, 0);
+      const cashTotal = dayData.amounts.cash.reduce((sum, amount) => sum + amount, 0);
+      const bothTotal = dayData.amounts.both.reduce((sum, amount) => sum + amount, 0);
+      const totalAmountCollected = medicalAidTotal + cashTotal + bothTotal;
+      const avgAmountPerCheckin = totalDayCheckins > 0 ? totalAmountCollected / totalDayCheckins : 0;
+
       const dayStats: DailyStatistics = {
         date: dayData.date,
         total_checkins: totalDayCheckins,
@@ -223,7 +254,14 @@ export async function GET(request: NextRequest) {
         status_breakdown: dayData.statuses,
         average_waiting_time: avgWaitingTime,
         attendance_rate: attendanceRate,
-        no_shows: dayData.statuses.waiting // Patients still waiting are considered no-shows for historical data
+        no_shows: dayData.statuses.waiting,
+        total_amount_collected: Math.round(totalAmountCollected * 100) / 100,
+        amount_breakdown_by_payment_method: {
+          medical_aid: Math.round(medicalAidTotal * 100) / 100,
+          cash: Math.round(cashTotal * 100) / 100,
+          both: Math.round(bothTotal * 100) / 100
+        },
+        average_amount_per_checkin: Math.round(avgAmountPerCheckin * 100) / 100
       };
 
       dailyData.push(dayStats);
@@ -239,13 +277,21 @@ export async function GET(request: NextRequest) {
 
     // Calculate overall summary
     const totalDays = allDates.length;
-    const dailyAverage = totalDays > 0 ? Math.round((totalCheckins / totalDays) * 100) / 100 : 0;
+    const dailyAverage = totalCheckins > 0 ? Math.round((totalCheckins / totalDays) * 100) / 100 : 0;
     const overallAvgWaitingTime = attendedWithWaitingTime > 0 
       ? Math.round(totalWaitingTime / attendedWithWaitingTime)
       : 0;
     const overallAttendanceRate = totalCheckins > 0 
       ? Math.round((overallStatuses.attended / totalCheckins) * 100)
       : 0;
+
+    // Calculate overall revenue statistics
+    const overallMedicalAidRevenue = overallAmounts.medical_aid.reduce((sum, amount) => sum + amount, 0);
+    const overallCashRevenue = overallAmounts.cash.reduce((sum, amount) => sum + amount, 0);
+    const overallBothRevenue = overallAmounts.both.reduce((sum, amount) => sum + amount, 0);
+    const totalRevenue = overallMedicalAidRevenue + overallCashRevenue + overallBothRevenue;
+    const averageDailyRevenue = totalDays > 0 ? totalRevenue / totalDays : 0;
+    const avgAmountPerCheckin = totalCheckins > 0 ? totalRevenue / totalCheckins : 0;
 
     // Reset peak day if no checkins found
     if (peakDay && peakDay.checkins === 0) {
@@ -259,7 +305,15 @@ export async function GET(request: NextRequest) {
       overall_avg_waiting_time: overallAvgWaitingTime,
       payment_method_totals: overallPaymentMethods,
       overall_attendance_rate: overallAttendanceRate,
-      peak_day: peakDay
+      peak_day: peakDay,
+      total_revenue: Math.round(totalRevenue * 100) / 100,
+      average_daily_revenue: Math.round(averageDailyRevenue * 100) / 100,
+      revenue_by_payment_method: {
+        medical_aid: Math.round(overallMedicalAidRevenue * 100) / 100,
+        cash: Math.round(overallCashRevenue * 100) / 100,
+        both: Math.round(overallBothRevenue * 100) / 100
+      },
+      average_amount_per_checkin: Math.round(avgAmountPerCheckin * 100) / 100
     };
 
     const response: ApiResponse = {

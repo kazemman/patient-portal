@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, TrendingUp, TrendingDown, Users, Clock, CreditCard, FileText, RefreshCw, Download } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, Users, Clock, CreditCard, FileText, RefreshCw, Download, DollarSign, Wallet } from 'lucide-react';
 
 interface CheckInData {
   date: string;
@@ -23,6 +23,13 @@ interface CheckInData {
   };
   average_waiting_time: number;
   no_shows?: number;
+  total_amount_collected: number;
+  amount_breakdown_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface WeeklyData extends Omit<CheckInData, 'date' | 'no_shows'> {
@@ -58,6 +65,16 @@ interface Summary {
     checkins: number;
   };
   busiest_day_of_week?: string;
+  total_revenue: number;
+  average_daily_revenue?: number;
+  average_weekly_revenue?: number;
+  average_monthly_revenue?: number;
+  revenue_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface ApiResponse {
@@ -134,6 +151,10 @@ export const CheckInStats = () => {
     return new Intl.NumberFormat().format(num);
   };
 
+  const formatCurrency = (amount: number): string => {
+    return `R${amount.toFixed(2)}`;
+  };
+
   const formatPercentage = (value: number, total: number): string => {
     if (total === 0) return '0%';
     return `${Math.round((value / total) * 100)}%`;
@@ -150,6 +171,17 @@ export const CheckInStats = () => {
     ].filter(item => item.value > 0);
   };
 
+  const getRevenueBreakdownData = () => {
+    if (!data?.summary.revenue_by_payment_method) return [];
+    
+    const revenue = data.summary.revenue_by_payment_method;
+    return [
+      { name: 'Medical Aid', value: revenue.medical_aid, color: PAYMENT_METHOD_COLORS.medical_aid },
+      { name: 'Cash', value: revenue.cash, color: PAYMENT_METHOD_COLORS.cash },
+      { name: 'Both', value: revenue.both, color: PAYMENT_METHOD_COLORS.both }
+    ].filter(item => item.value > 0);
+  };
+
   const getTrendData = () => {
     if (!data) return [];
 
@@ -163,7 +195,9 @@ export const CheckInStats = () => {
         waiting_time: item.average_waiting_time,
         medical_aid: item.payment_method_breakdown.medical_aid,
         cash: item.payment_method_breakdown.cash,
-        both: item.payment_method_breakdown.both
+        both: item.payment_method_breakdown.both,
+        revenue: item.total_amount_collected,
+        avg_amount: item.average_amount_per_checkin
       }));
     } else if (selectedPeriod === 'weekly' && data.weekly_data) {
       return data.weekly_data.map(item => ({
@@ -172,7 +206,9 @@ export const CheckInStats = () => {
         waiting_time: item.average_waiting_time,
         medical_aid: item.payment_method_breakdown.medical_aid,
         cash: item.payment_method_breakdown.cash,
-        both: item.payment_method_breakdown.both
+        both: item.payment_method_breakdown.both,
+        revenue: item.total_amount_collected,
+        avg_amount: item.average_amount_per_checkin
       }));
     } else if (selectedPeriod === 'monthly' && data.monthly_data) {
       return data.monthly_data.map(item => ({
@@ -181,7 +217,9 @@ export const CheckInStats = () => {
         waiting_time: item.average_waiting_time,
         medical_aid: item.payment_method_breakdown.medical_aid,
         cash: item.payment_method_breakdown.cash,
-        both: item.payment_method_breakdown.both
+        both: item.payment_method_breakdown.both,
+        revenue: item.total_amount_collected,
+        avg_amount: item.average_amount_per_checkin
       }));
     }
 
@@ -234,7 +272,7 @@ export const CheckInStats = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="pb-2">
                 <div className="h-4 bg-gray-200 rounded animate-pulse" />
@@ -289,6 +327,7 @@ export const CheckInStats = () => {
 
   const trendData = getTrendData();
   const paymentMethodData = getPaymentMethodData();
+  const revenueBreakdownData = getRevenueBreakdownData();
   const waitingTimeData = getWaitingTimeDistribution();
 
   return (
@@ -331,7 +370,7 @@ export const CheckInStats = () => {
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Check-ins</CardTitle>
@@ -349,6 +388,40 @@ export const CheckInStats = () => {
               {selectedPeriod === 'monthly' && data.summary.monthly_average && 
                 `${data.summary.monthly_average} per month average`
               }
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(data.summary.total_revenue)}</div>
+            <p className="text-xs text-muted-foreground">
+              {selectedPeriod === 'daily' && data.summary.average_daily_revenue && 
+                `${formatCurrency(data.summary.average_daily_revenue)} per day average`
+              }
+              {selectedPeriod === 'weekly' && data.summary.average_weekly_revenue && 
+                `${formatCurrency(data.summary.average_weekly_revenue)} per week average`
+              }
+              {selectedPeriod === 'monthly' && data.summary.average_monthly_revenue && 
+                `${formatCurrency(data.summary.average_monthly_revenue)} per month average`
+              }
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Amount</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(data.summary.average_amount_per_checkin)}</div>
+            <p className="text-xs text-muted-foreground">
+              Per check-in average
             </p>
           </CardContent>
         </Card>
@@ -456,6 +529,31 @@ export const CheckInStats = () => {
           </CardContent>
         </Card>
 
+        {/* Revenue Trend Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="period" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Payment Method Distribution */}
         <Card>
           <CardHeader>
@@ -490,6 +588,40 @@ export const CheckInStats = () => {
           </CardContent>
         </Card>
 
+        {/* Revenue by Payment Method */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue by Payment Method</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {revenueBreakdownData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={revenueBreakdownData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name}: ${formatCurrency(value)} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {revenueBreakdownData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No revenue data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Volume by Period */}
         <Card>
           <CardHeader>
@@ -514,25 +646,25 @@ export const CheckInStats = () => {
           </CardContent>
         </Card>
 
-        {/* Waiting Time Distribution */}
+        {/* Average Amount per Check-in */}
         <Card>
           <CardHeader>
-            <CardTitle>Waiting Time Distribution</CardTitle>
+            <CardTitle>Average Amount per Check-in</CardTitle>
           </CardHeader>
           <CardContent>
-            {waitingTimeData.length > 0 ? (
+            {trendData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={waitingTimeData} layout="horizontal">
+                <BarChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="range" type="category" />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#F59E0B" />
+                  <XAxis dataKey="period" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Bar dataKey="avg_amount" fill="#F59E0B" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No waiting time data available
+                No amount data available
               </div>
             )}
           </CardContent>
@@ -558,6 +690,8 @@ export const CheckInStats = () => {
                     <TableHead className="text-right">Medical Aid</TableHead>
                     <TableHead className="text-right">Cash</TableHead>
                     <TableHead className="text-right">Both</TableHead>
+                    <TableHead className="text-right">Total Revenue</TableHead>
+                    <TableHead className="text-right">Avg Amount</TableHead>
                     <TableHead className="text-right">Avg Wait (min)</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -581,6 +715,12 @@ export const CheckInStats = () => {
                           {item.both}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(item.revenue)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(item.avg_amount)}
+                      </TableCell>
                       <TableCell className="text-right">{item.waiting_time}</TableCell>
                     </TableRow>
                   ))}
@@ -596,31 +736,35 @@ export const CheckInStats = () => {
       </Card>
 
       {/* Additional Insights */}
-      {data.summary.busiest_day_of_week && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Additional Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Additional Insights</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {data.summary.busiest_day_of_week && (
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">Busiest day: <strong className="capitalize">{data.summary.busiest_day_of_week}</strong></span>
               </div>
-              {data.summary.peak_month && (
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Peak month: <strong>{data.summary.peak_month.month_name}</strong></span>
-                </div>
-              )}
+            )}
+            {data.summary.peak_month && (
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Total patients served: <strong>{formatNumber(data.summary.total_checkins)}</strong></span>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Peak month: <strong>{data.summary.peak_month.month_name}</strong></span>
               </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">Total patients served: <strong>{formatNumber(data.summary.total_checkins)}</strong></span>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">Cash revenue: <strong>{formatCurrency(data.summary.revenue_by_payment_method.cash)}</strong></span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -21,6 +21,13 @@ interface MonthlyData {
   average_waiting_time: number;
   daily_average: number;
   peak_day: string | null;
+  total_amount_collected: number;
+  amount_breakdown_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface Summary {
@@ -40,6 +47,14 @@ interface Summary {
     month_name: string;
     checkins: number;
   } | null;
+  total_revenue: number;
+  average_monthly_revenue: number;
+  revenue_by_payment_method: {
+    medical_aid: number;
+    cash: number;
+    both: number;
+  };
+  average_amount_per_checkin: number;
 }
 
 interface ApiResponse {
@@ -155,7 +170,11 @@ export async function GET(request: NextRequest) {
       monthNumber: number;
       checkins: typeof allCheckins;
       dailyCounts: Map<string, number>;
+      amounts: { medical_aid: number[]; cash: number[]; both: number[] };
     }>();
+
+    // Overall amounts tracking
+    const overallAmounts = { medical_aid: [] as number[], cash: [] as number[], both: [] as number[] };
 
     // Process each checkin
     allCheckins.forEach(checkin => {
@@ -173,7 +192,8 @@ export async function GET(request: NextRequest) {
           year,
           monthNumber,
           checkins: [],
-          dailyCounts: new Map()
+          dailyCounts: new Map(),
+          amounts: { medical_aid: [], cash: [], both: [] }
         });
       }
 
@@ -183,13 +203,20 @@ export async function GET(request: NextRequest) {
       // Track daily counts for peak day calculation
       const currentDayCount = monthData.dailyCounts.get(dayKey) || 0;
       monthData.dailyCounts.set(dayKey, currentDayCount + 1);
+
+      // Track amounts by payment method
+      const paymentMethod = checkin.paymentMethod as keyof typeof monthData.amounts;
+      if (checkin.amount !== null && checkin.amount !== undefined) {
+        monthData.amounts[paymentMethod].push(checkin.amount);
+        overallAmounts[paymentMethod].push(checkin.amount);
+      }
     });
 
     // Calculate monthly statistics
     const monthlyStats: MonthlyData[] = [];
     
     for (const monthData of monthlyDataMap.values()) {
-      const { month, month_name, year, monthNumber, checkins: monthCheckins, dailyCounts } = monthData;
+      const { month, month_name, year, monthNumber, checkins: monthCheckins, dailyCounts, amounts } = monthData;
       
       // Calculate payment method breakdown
       const paymentMethodBreakdown = {
@@ -242,6 +269,13 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Calculate amount statistics
+      const medicalAidTotal = amounts.medical_aid.reduce((sum, amount) => sum + amount, 0);
+      const cashTotal = amounts.cash.reduce((sum, amount) => sum + amount, 0);
+      const bothTotal = amounts.both.reduce((sum, amount) => sum + amount, 0);
+      const totalAmountCollected = medicalAidTotal + cashTotal + bothTotal;
+      const avgAmountPerCheckin = monthCheckins.length > 0 ? totalAmountCollected / monthCheckins.length : 0;
+
       monthlyStats.push({
         month,
         month_name,
@@ -250,7 +284,14 @@ export async function GET(request: NextRequest) {
         status_breakdown: statusBreakdown,
         average_waiting_time: averageWaitingTime,
         daily_average: dailyAverage,
-        peak_day: peakDay
+        peak_day: peakDay,
+        total_amount_collected: Math.round(totalAmountCollected * 100) / 100,
+        amount_breakdown_by_payment_method: {
+          medical_aid: Math.round(medicalAidTotal * 100) / 100,
+          cash: Math.round(cashTotal * 100) / 100,
+          both: Math.round(bothTotal * 100) / 100
+        },
+        average_amount_per_checkin: Math.round(avgAmountPerCheckin * 100) / 100
       });
     }
 
@@ -324,6 +365,14 @@ export async function GET(request: NextRequest) {
       return peak;
     }, null);
 
+    // Calculate overall revenue statistics
+    const overallMedicalAidRevenue = overallAmounts.medical_aid.reduce((sum, amount) => sum + amount, 0);
+    const overallCashRevenue = overallAmounts.cash.reduce((sum, amount) => sum + amount, 0);
+    const overallBothRevenue = overallAmounts.both.reduce((sum, amount) => sum + amount, 0);
+    const totalRevenue = overallMedicalAidRevenue + overallCashRevenue + overallBothRevenue;
+    const averageMonthlyRevenue = totalMonths > 0 ? totalRevenue / totalMonths : 0;
+    const avgAmountPerCheckin = totalCheckins > 0 ? totalRevenue / totalCheckins : 0;
+
     const summary: Summary = {
       total_months: totalMonths,
       total_checkins: totalCheckins,
@@ -336,7 +385,15 @@ export async function GET(request: NextRequest) {
         month: peakMonth.month,
         month_name: peakMonth.month_name,
         checkins: peakMonth.total_checkins
-      } : null
+      } : null,
+      total_revenue: Math.round(totalRevenue * 100) / 100,
+      average_monthly_revenue: Math.round(averageMonthlyRevenue * 100) / 100,
+      revenue_by_payment_method: {
+        medical_aid: Math.round(overallMedicalAidRevenue * 100) / 100,
+        cash: Math.round(overallCashRevenue * 100) / 100,
+        both: Math.round(overallBothRevenue * 100) / 100
+      },
+      average_amount_per_checkin: Math.round(avgAmountPerCheckin * 100) / 100
     };
 
     const response: ApiResponse = {

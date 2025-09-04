@@ -96,6 +96,25 @@ async function main() {
         return Math.floor(base);
     }
 
+    // New function to generate amounts based on payment method
+    function getAmount(paymentMethod: string): number | null {
+        if (paymentMethod === 'medical_aid') {
+            // Medical aid only - no direct payment amount
+            return null;
+        } else if (paymentMethod === 'cash') {
+            // Cash payments: R150 - R800 (consultation fees)
+            const baseAmount = 150 + Math.random() * 650;
+            // Round to nearest R10
+            return Math.round(baseAmount / 10) * 10;
+        } else if (paymentMethod === 'both') {
+            // Both payment: R50 - R300 (co-payment portion)
+            const baseAmount = 50 + Math.random() * 250;
+            // Round to nearest R10
+            return Math.round(baseAmount / 10) * 10;
+        }
+        return null;
+    }
+
     const sampleCheckins = [];
 
     // Generate recent check-ins (last 30 days) - 60 records
@@ -116,6 +135,9 @@ async function main() {
             attendedAt = attendedDate.toISOString();
         }
 
+        // Get amount based on payment method
+        const amount = getAmount(paymentMethod);
+
         sampleCheckins.push({
             patientId,
             checkinTime: checkinDate.toISOString(),
@@ -124,6 +146,7 @@ async function main() {
             waitingTimeMinutes,
             attendedAt,
             notes: note,
+            amount,
             createdAt: checkinDate.toISOString(),
             updatedAt: attendedAt || checkinDate.toISOString(),
         });
@@ -146,6 +169,8 @@ async function main() {
             attendedAt = attendedDate.toISOString();
         }
 
+        const amount = getAmount(paymentMethod);
+
         sampleCheckins.push({
             patientId,
             checkinTime: checkinDate.toISOString(),
@@ -154,6 +179,7 @@ async function main() {
             waitingTimeMinutes,
             attendedAt,
             notes: note,
+            amount,
             createdAt: checkinDate.toISOString(),
             updatedAt: attendedAt || checkinDate.toISOString(),
         });
@@ -176,6 +202,8 @@ async function main() {
             attendedAt = attendedDate.toISOString();
         }
 
+        const amount = getAmount(paymentMethod);
+
         sampleCheckins.push({
             patientId,
             checkinTime: checkinDate.toISOString(),
@@ -184,6 +212,7 @@ async function main() {
             waitingTimeMinutes,
             attendedAt,
             notes: note,
+            amount,
             createdAt: checkinDate.toISOString(),
             updatedAt: attendedAt || checkinDate.toISOString(),
         });
@@ -213,6 +242,8 @@ async function main() {
             attendedAt = attendedDate.toISOString();
         }
 
+        const amount = getAmount(paymentMethod);
+
         todayCheckins.push({
             patientId,
             checkinTime: checkinDate.toISOString(),
@@ -221,6 +252,7 @@ async function main() {
             waitingTimeMinutes,
             attendedAt,
             notes: note,
+            amount,
             createdAt: checkinDate.toISOString(),
             updatedAt: attendedAt || checkinDate.toISOString(),
         });
