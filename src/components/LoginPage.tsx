@@ -126,15 +126,7 @@ export const ClinicLogin = ({ onLoginSuccess }: ClinicLoginProps) => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Branding */}
         <div className="text-center space-y-4">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-              <Heart className="w-7 h-7 text-white" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold text-blue-600">InvoTech</h1>
-              <p className="text-sm text-gray-600">Health Care</p>
-            </div>
-          </div>
+          {/* Logo completely removed */}
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-gray-900">Staff Portal</h2>
             <p className="text-gray-600">Sign in to access the clinic management system</p>
