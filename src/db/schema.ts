@@ -81,3 +81,19 @@ export const staffUsers = sqliteTable('staff_users', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+// Add audit logs table
+export const auditLogs = sqliteTable('audit_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  timestamp: text('timestamp').notNull(),
+  patientId: integer('patient_id').references(() => patients.id),
+  patientName: text('patient_name').notNull(),
+  changedBy: text('changed_by').notNull(),
+  fieldsChanged: text('fields_changed', { mode: 'json' }).notNull(), // Array of field names
+  oldValue: text('old_value', { mode: 'json' }), // JSON object with old values
+  newValue: text('new_value', { mode: 'json' }).notNull(), // JSON object with new values
+  reason: text('reason'),
+  metadata: text('metadata', { mode: 'json' }), // Additional metadata
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});

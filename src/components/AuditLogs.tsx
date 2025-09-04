@@ -31,12 +31,12 @@ import {
 interface AuditLogEntry {
   id: string;
   timestamp: string;
-  patient_id: string;
-  patient_name: string;
-  changed_by: string;
-  fields_changed: string[];
-  old_value: any;
-  new_value: any;
+  patientId: string;
+  patientName: string;
+  changedBy: string;
+  fieldsChanged: string[];
+  oldValue: any;
+  newValue: any;
   reason?: string;
   metadata?: any;
 }
@@ -87,7 +87,7 @@ export default function AuditLogs() {
   const checkPermissions = useCallback(async () => {
     try {
       const token = localStorage.getItem("bearer_token");
-      const response = await fetch('/api/audit-logs/permissions', {
+      const response = await fetch('/api/webhook/clinic-portal/audit-logs/permissions', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -97,7 +97,7 @@ export default function AuditLogs() {
 
       if (response.ok) {
         const data = await response.json();
-        setHasPermission(data.hasAccess);
+        setHasPermission(data.hasPermission);
       } else {
         setHasPermission(false);
       }
@@ -124,7 +124,7 @@ export default function AuditLogs() {
         )
       });
 
-      const response = await fetch(`/api/audit-logs?${queryParams}`, {
+      const response = await fetch(`/api/webhook/clinic-portal/audit-logs?${queryParams}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -147,8 +147,8 @@ export default function AuditLogs() {
 
       // Extract unique users and fields for filter dropdowns
       if (data.logs && data.logs.length > 0) {
-        const users = [...new Set(data.logs.map((log: AuditLogEntry) => log.changed_by))];
-        const fields = [...new Set(data.logs.flatMap((log: AuditLogEntry) => log.fields_changed))];
+        const users = [...new Set(data.logs.map((log: AuditLogEntry) => log.changedBy))];
+        const fields = [...new Set(data.logs.flatMap((log: AuditLogEntry) => log.fieldsChanged))];
         setAvailableUsers(users);
         setAvailableFields(fields);
       }
@@ -221,12 +221,12 @@ export default function AuditLogs() {
       headers.join(','),
       ...auditLogs.map(log => [
         new Date(log.timestamp).toISOString(),
-        log.patient_id,
-        `"${log.patient_name}"`,
-        `"${log.changed_by}"`,
-        `"${log.fields_changed.join(', ')}"`,
-        `"${JSON.stringify(log.old_value)}"`,
-        `"${JSON.stringify(log.new_value)}"`,
+        log.patientId,
+        `"${log.patientName}"`,
+        `"${log.changedBy}"`,
+        `"${log.fieldsChanged.join(', ')}"`,
+        `"${JSON.stringify(log.oldValue)}"`,
+        `"${JSON.stringify(log.newValue)}"`,
         `"${log.reason || ''}"`
       ].join(','))
     ].join('\n');
@@ -466,25 +466,25 @@ export default function AuditLogs() {
                           <TableCell>
                             <div className="space-y-1">
                               <button
-                                onClick={() => navigateToPatient(log.patient_id)}
+                                onClick={() => navigateToPatient(log.patientId)}
                                 className="text-primary hover:underline font-medium text-left"
                               >
-                                {log.patient_name}
+                                {log.patientName}
                               </button>
                               <div className="text-xs text-muted-foreground">
-                                ID: {log.patient_id}
+                                ID: {log.patientId}
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-muted-foreground" />
-                              <span>{log.changed_by}</span>
+                              <span>{log.changedBy}</span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {formatFieldChanges(log.fields_changed)}
+                              {formatFieldChanges(log.fieldsChanged)}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -578,21 +578,21 @@ export default function AuditLogs() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Changed By</label>
-                    <p>{selectedLog.changed_by}</p>
+                    <p>{selectedLog.changedBy}</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Patient</label>
                     <button
-                      onClick={() => navigateToPatient(selectedLog.patient_id)}
+                      onClick={() => navigateToPatient(selectedLog.patientId)}
                       className="text-primary hover:underline text-left"
                     >
-                      {selectedLog.patient_name} ({selectedLog.patient_id})
+                      {selectedLog.patientName} ({selectedLog.patientId})
                     </button>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Fields Changed</label>
                     <div className="flex flex-wrap gap-1">
-                      {formatFieldChanges(selectedLog.fields_changed)}
+                      {formatFieldChanges(selectedLog.fieldsChanged)}
                     </div>
                   </div>
                 </div>
@@ -605,7 +605,7 @@ export default function AuditLogs() {
                       <label className="text-sm font-medium text-muted-foreground">Previous Value</label>
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                         <pre className="text-sm font-mono whitespace-pre-wrap">
-                          {JSON.stringify(selectedLog.old_value, null, 2)}
+                          {JSON.stringify(selectedLog.oldValue, null, 2)}
                         </pre>
                       </div>
                     </div>
@@ -613,7 +613,7 @@ export default function AuditLogs() {
                       <label className="text-sm font-medium text-muted-foreground">New Value</label>
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                         <pre className="text-sm font-mono whitespace-pre-wrap">
-                          {JSON.stringify(selectedLog.new_value, null, 2)}
+                          {JSON.stringify(selectedLog.newValue, null, 2)}
                         </pre>
                       </div>
                     </div>
