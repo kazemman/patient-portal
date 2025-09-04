@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { InvotechLogo } from '@/components/InvotechLogo';
 
 interface LoginFormData {
   email: string;
@@ -126,7 +127,9 @@ export const ClinicLogin = ({ onLoginSuccess }: ClinicLoginProps) => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Branding */}
         <div className="text-center space-y-4">
-          {/* Logo completely removed */}
+          <div className="flex justify-center">
+            <InvotechLogo size="large" showText={true} />
+          </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-gray-900">Staff Portal</h2>
             <p className="text-gray-600">Sign in to access the clinic management system</p>
@@ -267,7 +270,7 @@ export const ClinicLogin = ({ onLoginSuccess }: ClinicLoginProps) => {
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-500">
-          <p>&copy; 2024 InvoTech Health Care. All rights reserved.</p>
+          <p>&copy; 2024 Invotech Health Care. All rights reserved.</p>
           <p className="mt-1">Professional clinic management system</p>
         </div>
       </div>

@@ -25,7 +25,7 @@ export const InvotechLogo = ({
       {/* Logo Image */}
       <div className="flex-shrink-0">
         <img
-          src="https://v3.fal.media/files/koala/P6fIDjl9cl_5-Qk54JoBM_output.png"
+          src="https://v3.fal.media/files/panda/oO42t1JJpKvZavykLcIKX_output.png"
           alt="Invotech Logo"
           width={config.logoSize}
           height={config.logoSize}

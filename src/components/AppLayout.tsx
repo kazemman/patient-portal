@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { InvotechLogo } from '@/components/InvotechLogo';
 
 interface ClinicStats {
   totalPatients: number;
@@ -131,10 +132,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
-          {/* Header - Logo completely removed */}
+          {/* Header with Logo */}
           <div className="flex items-center justify-between p-4 border-b border-blue-100">
             <div className="flex-1">
-              {/* Logo space reserved for user to add their own logo */}
+              {!sidebarCollapsed && (
+                <InvotechLogo size="medium" showText={true} />
+              )}
+              {sidebarCollapsed && (
+                <InvotechLogo size="small" showText={false} />
+              )}
             </div>
             <Button
               variant="ghost"
