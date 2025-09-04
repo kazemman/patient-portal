@@ -15,7 +15,11 @@ import {
   Heart,
   Pill,
   CreditCard,
-  User
+  User,
+  BarChart3,
+  Shield,
+  UsersRound,
+  ClipboardCheck
 } from 'lucide-react'
 import {
   Sidebar,
@@ -76,7 +80,7 @@ const StatCard = ({ title, value, icon, iconColor = "text-primary" }: StatCardPr
 const clinicNavigationItems = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: LayoutDashboard,
   },
   {
@@ -92,7 +96,7 @@ const clinicNavigationItems = [
   {
     title: "Check-In",
     url: "/checkin",
-    icon: UserPlus,
+    icon: ClipboardCheck,
   },
   {
     title: "Queue",
@@ -100,9 +104,19 @@ const clinicNavigationItems = [
     icon: Activity,
   },
   {
-    title: "Records",
-    url: "/records",
-    icon: FileText,
+    title: "Analytics",
+    url: "/analytics",
+    icon: BarChart3,
+  },
+  {
+    title: "Staff Management",
+    url: "/staff",
+    icon: UsersRound,
+  },
+  {
+    title: "Audit Logs",
+    url: "/audit-logs",
+    icon: Shield,
   },
   {
     title: "Settings",

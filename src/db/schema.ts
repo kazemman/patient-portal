@@ -123,3 +123,128 @@ export const verification = sqliteTable("verification", {
     () => new Date(),
   ),
 });
+
+export const staff = sqliteTable('staff', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  email: text('email').notNull().unique(),
+  phone: text('phone').notNull(),
+  role: text('role').notNull(), // admin, doctor, nurse, receptionist, manager
+  department: text('department').notNull(),
+  hireDate: text('hire_date').notNull(),
+  status: text('status').notNull().default('active'), // active, inactive, terminated
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  userId: text('user_id').references(() => user.id), // Link to better-auth user
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const checkins = sqliteTable('checkins', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  patientId: integer('patient_id').references(() => patients.id).notNull(),
+  appointmentId: integer('appointment_id').references(() => appointments.id),
+  checkinTime: text('checkin_time').notNull(),
+  status: text('status').notNull(), // waiting, called, attended, cancelled, no-show
+  queueNumber: integer('queue_number'),
+  waitingTime: integer('waiting_time'), // minutes
+  staffId: integer('staff_id').references(() => staff.id),
+  type: text('type').notNull(), // appointment, walk-in
+  notes: text('notes'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const queue = sqliteTable('queue', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  patientId: integer('patient_id').references(() => patients.id).notNull(),
+  appointmentId: integer('appointment_id').references(() => appointments.id),
+  checkinId: integer('checkin_id').references(() => checkins.id),
+  queueNumber: integer('queue_number').notNull(),
+  status: text('status').notNull(), // waiting, called, in-progress, completed, cancelled
+  checkinTime: text('checkin_time').notNull(),
+  calledTime: text('called_time'),
+  completedTime: text('completed_time'),
+  priority: text('priority').notNull().default('normal'), // high, normal, low
+  staffId: integer('staff_id').references(() => staff.id),
+  estimatedWaitTime: integer('estimated_wait_time'), // minutes
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const auditLogs = sqliteTable('audit_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').references(() => user.id),
+  staffId: integer('staff_id').references(() => staff.id),
+  action: text('action').notNull(), // create, update, delete, view, login, logout
+  tableName: text('table_name').notNull(),
+  recordId: text('record_id'),
+  oldValues: text('old_values', { mode: 'json' }),
+  newValues: text('new_values', { mode: 'json' }),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  timestamp: text('timestamp').notNull(),
+  description: text('description'),
+});
+
+export const departments = sqliteTable('departments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  description: text('description'),
+  headStaffId: integer('head_staff_id').references(() => staff.id),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// Update existing patients table with additional fields
+export const clinicPatients = sqliteTable('clinic_patients', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  email: text('email').notNull().unique(),
+  phone: text('phone').notNull(),
+  dateOfBirth: text('date_of_birth').notNull(),
+  address: text('address').notNull(),
+  emergencyContact: text('emergency_contact').notNull(),
+  insuranceInfo: text('insurance_info', { mode: 'json' }),
+  registrationDate: text('registration_date').notNull(),
+  status: text('status').notNull().default('active'), // active, inactive, archived
+  active: integer('active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// Update existing appointments table with additional fields  
+export const clinicAppointments = sqliteTable('clinic_appointments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  patientId: integer('patient_id').references(() => clinicPatients.id).notNull(),
+  staffId: integer('staff_id').references(() => staff.id).notNull(),
+  appointmentDate: text('appointment_date').notNull(),
+  appointmentTime: text('appointment_time').notNull(),
+  duration: integer('duration').default(30), // minutes
+  status: text('status').notNull(), // scheduled, checked-in, in-progress, completed, cancelled, no-show
+  reason: text('reason').notNull(),
+  notes: text('notes'),
+  departmentId: integer('department_id').references(() => departments.id),
+  priority: text('priority').default('normal'), // high, normal, low
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// Update existing medical records with additional fields
+export const clinicMedicalRecords = sqliteTable('clinic_medical_records', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  patientId: integer('patient_id').references(() => clinicPatients.id).notNull(),
+  staffId: integer('staff_id').references(() => staff.id).notNull(),
+  appointmentId: integer('appointment_id').references(() => clinicAppointments.id),
+  visitDate: text('visit_date').notNull(),
+  diagnosis: text('diagnosis').notNull(),
+  treatment: text('treatment').notNull(),
+  notes: text('notes'),
+  recordType: text('record_type').notNull().default('visit_note'), // visit_note, lab_result, prescription, imaging
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  doctorName: text('doctor_name').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
