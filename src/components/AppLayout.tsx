@@ -174,9 +174,11 @@ export const AppLayout = ({ clinicStats, children, isPatientPortal = true }: App
         <Sidebar>
           <SidebarHeader className="border-b border-sidebar-border">
             <div className="flex items-center gap-2 px-4 py-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                <Heart className="h-4 w-4 text-white" />
-              </div>
+              <img 
+                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/document-uploads/1756993698483-m835t4w714e.png" 
+                alt="InvoTech Health Care Logo" 
+                className="h-8 w-8 rounded-lg object-cover"
+              />
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-sidebar-foreground">
                   InvoTech

@@ -3,47 +3,61 @@ import { clinicAppointments } from '@/db/schema';
 
 async function main() {
     const now = new Date();
-    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-    const oneMonthFromNow = new Date(now.getFullYear(), now.getMonth() + 1, 30);
-    
-    const appointmentReasons = [
-        'Annual physical examination',
-        'Follow-up for hypertension',
-        'Chest pain evaluation',
-        'Routine pediatric checkup',
-        'Skin rash consultation',
-        'Back pain assessment',
-        'Medication review',
-        'Lab result discussion',
-        'Preventive care visit',
-        'Diabetes management',
-        'Blood pressure monitoring',
-        'Allergy consultation',
-        'Joint pain evaluation',
-        'Respiratory infection',
-        'Wound care follow-up',
-        'Mental health consultation',
-        'Vaccination appointment',
-        'Weight management consultation',
-        'Headache evaluation',
-        'Eye examination',
-        'Ear infection treatment',
-        'Pregnancy checkup',
-        'Thyroid evaluation',
-        'Heart palpitation assessment',
-        'Digestive issues consultation'
+    const twoMonthsAgo = new Date(now);
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    const oneMonthFromNow = new Date(now);
+    oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+
+    const reasons = [
+        'Annual Physical Exam',
+        'Follow-up Consultation',
+        'Blood Work and Lab Tests',
+        'Vaccination',
+        'Routine Check-up',
+        'Diabetes Management',
+        'Blood Pressure Check',
+        'Cold and Flu Symptoms',
+        'Skin Condition Evaluation',
+        'Headache Consultation',
+        'Joint Pain Assessment',
+        'Preventive Care',
+        'Medication Review',
+        'Heart Health Check',
+        'Mental Health Consultation',
+        'Allergy Testing',
+        'Eye Examination',
+        'Physical Therapy Evaluation',
+        'Chronic Pain Management',
+        'Wellness Consultation'
     ];
 
-    const appointmentTypes = [
-        { duration: 30, type: 'Routine checkup' },
-        { duration: 15, type: 'Follow-up visit' },
-        { duration: 30, type: 'Follow-up visit' },
-        { duration: 45, type: 'Consultation' },
-        { duration: 60, type: 'Consultation' },
-        { duration: 60, type: 'Procedure' },
-        { duration: 90, type: 'Procedure' },
-        { duration: 30, type: 'Emergency visit' },
-        { duration: 45, type: 'Emergency visit' }
+    const completedNotes = [
+        'Patient responded well to treatment plan. Follow-up in 3 months.',
+        'Vital signs normal. Prescribed medication as discussed.',
+        'Blood work results reviewed. All levels within normal range.',
+        'Patient education provided on lifestyle modifications.',
+        'Symptoms improving with current treatment. Continue medications.',
+        'Referred to specialist for further evaluation.',
+        'Vaccination administered successfully. No adverse reactions.',
+        'Routine screening completed. Results pending.',
+        'Discussed diet and exercise recommendations.',
+        'Patient compliance good. Adjust medication dosage.',
+        'Physical examination normal. Continue current care plan.',
+        'Lab results discussed. Minor adjustments to treatment.',
+        'Chronic condition stable. Next visit in 6 months.',
+        'Preventive measures discussed. Schedule annual follow-up.',
+        'Symptoms resolved. Return if condition worsens.'
+    ];
+
+    const cancellationReasons = [
+        'Patient illness - rescheduled',
+        'Emergency came up',
+        'Transportation issues',
+        'Work conflict',
+        'Family emergency',
+        'Weather conditions',
+        'No longer needed',
+        'Doctor unavailable'
     ];
 
     const timeSlots = [
@@ -52,116 +66,128 @@ async function main() {
         '16:00', '16:30', '17:00', '17:30'
     ];
 
-    const priorities = ['low', 'normal', 'high'];
-    const statuses = ['scheduled', 'checked-in', 'in-progress', 'completed', 'cancelled', 'no-show'];
+    const durations = [15, 30, 45, 60, 90];
 
-    const sampleAppointments = [];
+    // Generate business days only (skip weekends)
+    function getBusinessDays(startDate: Date, endDate: Date): Date[] {
+        const businessDays: Date[] = [];
+        const current = new Date(startDate);
+        
+        while (current <= endDate) {
+            const dayOfWeek = current.getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip Sunday (0) and Saturday (6)
+                businessDays.push(new Date(current));
+            }
+            current.setDate(current.getDate() + 1);
+        }
+        
+        return businessDays;
+    }
+
+    const businessDays = getBusinessDays(twoMonthsAgo, oneMonthFromNow);
+    const todayStr = now.toISOString().split('T')[0];
     
-    // Track appointments by date and time to avoid conflicts
-    const scheduledSlots = new Map();
+    // Track appointments to avoid conflicts
+    const scheduledSlots = new Set<string>();
+
+    function generateAppointment(targetDate: Date, statusOptions: string[], isPast: boolean, isToday: boolean) {
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (attempts < maxAttempts) {
+            const patientId = Math.floor(Math.random() * 80) + 1;
+            const staffId = Math.floor(Math.random() * 20) + 1;
+            const appointmentTime = timeSlots[Math.floor(Math.random() * timeSlots.length)];
+            const dateStr = targetDate.toISOString().split('T')[0];
+            
+            const slotKey = `${staffId}-${dateStr}-${appointmentTime}`;
+            
+            if (!scheduledSlots.has(slotKey)) {
+                scheduledSlots.add(slotKey);
+                
+                const reason = reasons[Math.floor(Math.random() * reasons.length)];
+                const duration = durations[Math.floor(Math.random() * durations.length)];
+                const departmentId = Math.floor(Math.random() * 10) + 1;
+                
+                let priority = 'normal';
+                const priorityRand = Math.random();
+                if (priorityRand < 0.05) priority = 'low';
+                else if (priorityRand < 0.20) priority = 'high';
+                
+                let status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
+                let notes = null;
+                
+                if (status === 'completed') {
+                    notes = completedNotes[Math.floor(Math.random() * completedNotes.length)];
+                } else if (status === 'cancelled') {
+                    notes = cancellationReasons[Math.floor(Math.random() * cancellationReasons.length)];
+                } else if (status === 'no-show') {
+                    notes = 'Patient did not show up for scheduled appointment';
+                }
+                
+                const createdAt = isPast ? 
+                    new Date(targetDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() :
+                    new Date(now.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString();
+                
+                return {
+                    patientId,
+                    staffId,
+                    appointmentDate: dateStr,
+                    appointmentTime,
+                    duration,
+                    status,
+                    reason,
+                    notes,
+                    departmentId,
+                    priority,
+                    createdAt,
+                    updatedAt: createdAt,
+                };
+            }
+            attempts++;
+        }
+        return null;
+    }
+
+    const sampleAppointments: any[] = [];
     
-    for (let i = 0; i < 175; i++) {
-        // Generate random date within 3-month range
-        const randomTime = twoMonthsAgo.getTime() + Math.random() * (oneMonthFromNow.getTime() - twoMonthsAgo.getTime());
-        const appointmentDate = new Date(randomTime);
+    // Past appointments (60% of 175 = 105)
+    const pastBusinessDays = businessDays.filter(date => date < now);
+    const pastStatusOptions = ['completed', 'cancelled', 'no-show'];
+    const pastWeights = [0.70, 0.15, 0.15]; // 70% completed, 15% cancelled, 15% no-show
+    
+    for (let i = 0; i < 105; i++) {
+        const randomDay = pastBusinessDays[Math.floor(Math.random() * pastBusinessDays.length)];
+        const rand = Math.random();
+        let status = 'completed';
+        if (rand < pastWeights[2]) status = 'no-show';
+        else if (rand < pastWeights[1] + pastWeights[2]) status = 'cancelled';
         
-        // Skip weekends
-        if (appointmentDate.getDay() === 0 || appointmentDate.getDay() === 6) {
-            i--;
-            continue;
+        const appointment = generateAppointment(randomDay, [status], true, false);
+        if (appointment) {
+            sampleAppointments.push(appointment);
         }
-        
-        const dateStr = appointmentDate.toISOString().split('T')[0];
-        const timeSlot = timeSlots[Math.floor(Math.random() * timeSlots.length)];
-        const appointmentType = appointmentTypes[Math.floor(Math.random() * appointmentTypes.length)];
-        const reason = appointmentReasons[Math.floor(Math.random() * appointmentReasons.length)];
-        
-        // Check for scheduling conflicts
-        const slotKey = `${dateStr}-${timeSlot}-${Math.floor(Math.random() * 20) + 1}`; // Random staff ID 1-20
-        if (scheduledSlots.has(slotKey)) {
-            i--;
-            continue;
-        }
-        scheduledSlots.set(slotKey, true);
-        
-        // Determine status based on date and distribution
-        let status;
-        const isPast = appointmentDate < now;
-        const isToday = dateStr === now.toISOString().split('T')[0];
-        const isFuture = appointmentDate > now;
-        
-        if (isPast) {
-            const rand = Math.random();
-            if (rand < 0.70) status = 'completed';
-            else if (rand < 0.85) status = 'cancelled';
-            else status = 'no-show';
-        } else if (isToday) {
-            const rand = Math.random();
-            if (rand < 0.30) status = 'completed';
-            else if (rand < 0.45) status = 'in-progress';
-            else if (rand < 0.60) status = 'checked-in';
-            else status = 'scheduled';
-        } else {
-            status = 'scheduled';
-        }
-        
-        // Generate notes for completed appointments
-        let notes = null;
-        if (status === 'completed') {
-            const noteOptions = [
-                'Patient responded well to treatment. Continue current medication.',
-                'Vital signs normal. Recommended follow-up in 3 months.',
-                'Lab results reviewed. All values within normal range.',
-                'Patient reported improvement in symptoms. Adjusting dosage.',
-                'Routine examination completed. No concerns noted.',
-                'Patient educated on lifestyle modifications.',
-                'Treatment plan updated based on current condition.',
-                'Patient compliant with prescribed medication regimen.',
-                'Referred to specialist for further evaluation.',
-                'Preventive care measures discussed with patient.'
-            ];
-            notes = noteOptions[Math.floor(Math.random() * noteOptions.length)];
-        } else if (status === 'cancelled') {
-            const cancelReasons = [
-                'Patient cancelled due to scheduling conflict',
-                'Cancelled due to patient illness',
-                'Rescheduled at patient request',
-                'Emergency cancellation',
-                'Weather-related cancellation'
-            ];
-            notes = cancelReasons[Math.floor(Math.random() * cancelReasons.length)];
-        }
-        
-        // Priority distribution
-        const priorityRand = Math.random();
-        let priority;
-        if (priorityRand < 0.10) priority = 'low';
-        else if (priorityRand < 0.80) priority = 'normal';
-        else priority = 'high';
-        
-        // CreatedAt should be before appointment date
-        const createdDate = new Date(appointmentDate.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000);
-        const updatedDate = status === 'scheduled' ? createdDate : new Date(appointmentDate.getTime() + Math.random() * 24 * 60 * 60 * 1000);
-        
-        sampleAppointments.push({
-            patientId: Math.floor(Math.random() * 80) + 1,
-            staffId: Math.floor(Math.random() * 20) + 1,
-            appointmentDate: dateStr,
-            appointmentTime: timeSlot,
-            duration: appointmentType.duration,
-            status: status,
-            reason: reason,
-            notes: notes,
-            departmentId: Math.floor(Math.random() * 10) + 1,
-            priority: priority,
-            createdAt: createdDate.toISOString(),
-            updatedAt: updatedDate.toISOString(),
-        });
     }
     
-    // Sort by appointment date for realistic data flow
-    sampleAppointments.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
+    // Today's appointments (15% of 175 = 26)
+    const todayStatusOptions = ['scheduled', 'checked-in', 'in-progress', 'completed'];
+    for (let i = 0; i < 26; i++) {
+        const appointment = generateAppointment(now, todayStatusOptions, false, true);
+        if (appointment) {
+            sampleAppointments.push(appointment);
+        }
+    }
     
+    // Future appointments (25% of 175 = 44)
+    const futureBusinessDays = businessDays.filter(date => date > now);
+    for (let i = 0; i < 44; i++) {
+        const randomDay = futureBusinessDays[Math.floor(Math.random() * futureBusinessDays.length)];
+        const appointment = generateAppointment(randomDay, ['scheduled'], false, false);
+        if (appointment) {
+            sampleAppointments.push(appointment);
+        }
+    }
+
     await db.insert(clinicAppointments).values(sampleAppointments);
     
     console.log('✅ Clinic appointments seeder completed successfully');

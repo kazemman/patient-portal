@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
     const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString().split('T')[0];
 
-    // 1. Total Active Patients
+    // 1. Total Active Patients - fix boolean query
     const totalPatientsResult = await db.select({ count: count() })
       .from(clinicPatients)
-      .where(eq(clinicPatients.active, true));
+      .where(eq(clinicPatients.active, 1)); // Use 1 instead of true for SQLite
     const totalPatients = totalPatientsResult[0]?.count || 0;
 
     // 2. Today's Appointments
@@ -50,11 +50,11 @@ export async function GET(request: NextRequest) {
       ));
     const completedToday = completedTodayResult[0]?.count || 0;
 
-    // 5. Staff On Duty
+    // 5. Staff On Duty - fix boolean query
     const staffOnDutyResult = await db.select({ count: count() })
       .from(staff)
       .where(and(
-        eq(staff.isActive, true),
+        eq(staff.isActive, 1), // Use 1 instead of true for SQLite
         eq(staff.status, 'active')
       ));
     const staffOnDuty = staffOnDutyResult[0]?.count || 0;
