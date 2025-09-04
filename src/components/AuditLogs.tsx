@@ -116,13 +116,28 @@ export default function AuditLogs() {
 
     try {
       const token = localStorage.getItem("bearer_token");
+      
+      // Filter out empty values and "all" values, and validate patient_id
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([key, value]) => {
+          if (!value || value === '' || value === 'all') return false;
+          
+          // Validate patient_id is numeric
+          if (key === 'patient_id' && isNaN(parseInt(value))) {
+            throw new Error('Patient ID must be a valid number');
+          }
+          
+          return true;
+        })
+      );
+
       const queryParams = new URLSearchParams({
         page: pagination.currentPage.toString(),
         limit: pagination.pageSize.toString(),
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, value]) => value !== '')
-        )
+        ...cleanFilters
       });
+
+      console.log('Fetching audit logs with params:', queryParams.toString());
 
       const response = await fetch(`/api/webhook/clinic-portal/audit-logs?${queryParams}`, {
         method: 'GET',
@@ -133,7 +148,9 @@ export default function AuditLogs() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch audit logs: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -154,7 +171,8 @@ export default function AuditLogs() {
       }
     } catch (err) {
       console.error('Fetch error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch audit logs');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch audit logs';
+      setError(`Failed to fetch audit logs: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
